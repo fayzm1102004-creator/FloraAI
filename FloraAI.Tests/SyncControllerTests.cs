@@ -17,12 +17,17 @@ public class SyncControllerTests
     private readonly SyncController _controller;
     private readonly Mock<ISyncService> _serviceMock;
     private readonly Mock<ILogger<SyncController>> _loggerMock;
+    private readonly AutoMapper.IMapper _mapper;
 
     public SyncControllerTests()
     {
         _serviceMock = new Mock<ISyncService>();
         _loggerMock = new Mock<ILogger<SyncController>>();
-        _controller = new SyncController(_serviceMock.Object, _loggerMock.Object);
+
+        var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<FloraAI.API.Mappings.MappingProfile>(), Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance);
+        _mapper = config.CreateMapper();
+
+        _controller = new SyncController(_serviceMock.Object, _loggerMock.Object, _mapper);
     }
 
     [Fact]

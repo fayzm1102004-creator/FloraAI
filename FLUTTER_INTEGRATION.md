@@ -101,9 +101,20 @@ Future<String?> login(String email, String password) async {
 ## 🔄 5. المزامنة والسجل (Sync & History)
 
 ### 🔹 رفع الفحوصات المعلقة (Push Offline)
-تُستخدم عند استعادة الإنترنت لإرسال ما تم فحصه Offline.
+تُستخدم عند استعادة الإنترنت لإرسال ما تم فحصه Offline ليقوم السيرفر بجلبه من الذكاء الاصطناعي.
 *   **Endpoint:** `/api/sync/push` | **Method:** `POST`
-*   **Request Body:** `{"pendingScans": [{"plantType": "...", "detectedCategory": "..."}]}`
+*   **Request Body:** 
+```json
+{
+  "pendingScans": [
+    {
+      "plantType": "Tomato",
+      "conditionName": "البقع البنية"
+    }
+  ]
+}
+```
+*   **Response (200 OK):** سيعيد مصفوفة `diagnosisResults` تحتوي على (العلاج + الرعاية) لكل نبتة تم رفعها.
 
 💡 **Pro-Tips (شاشة ملف النبتة):**
 1. **التعامل مع الحالة (Healthy vs Sick):**

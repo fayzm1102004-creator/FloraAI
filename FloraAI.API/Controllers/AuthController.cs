@@ -36,15 +36,9 @@ public class AuthController : ControllerBase
                 return BadRequest(ModelState);
 
             var user = await _userService.RegisterAsync(request.FullName, request.Email, request.Password);
-            var response = new UserResponseDto
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email
-            };
-
+            
             _logger.LogInformation($"User registered successfully: {user.Email}");
-            return CreatedAtAction(nameof(Register), response);
+            return CreatedAtAction(nameof(Register), user);
         }
         catch (InvalidOperationException ex)
         {
@@ -84,15 +78,8 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { message = "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
             }
 
-            var response = new UserResponseDto
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email
-            };
-
             _logger.LogInformation($"User logged in successfully: {user.Email}");
-            return Ok(response);
+            return Ok(user);
         }
         catch (Exception ex)
         {

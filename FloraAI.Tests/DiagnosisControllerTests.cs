@@ -18,13 +18,18 @@ public class DiagnosisControllerTests
     private readonly Mock<IDiagnosisService> _diagnosisServiceMock;
     private readonly Mock<IConditionService> _conditionServiceMock;
     private readonly Mock<ILogger<DiagnosisController>> _loggerMock;
+    private readonly AutoMapper.IMapper _mapper;
 
     public DiagnosisControllerTests()
     {
         _diagnosisServiceMock = new Mock<IDiagnosisService>();
         _conditionServiceMock = new Mock<IConditionService>();
         _loggerMock = new Mock<ILogger<DiagnosisController>>();
-        _controller = new DiagnosisController(_diagnosisServiceMock.Object, _conditionServiceMock.Object, _loggerMock.Object);
+
+        var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<FloraAI.API.Mappings.MappingProfile>(), Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance);
+        _mapper = config.CreateMapper();
+
+        _controller = new DiagnosisController(_diagnosisServiceMock.Object, _conditionServiceMock.Object, _loggerMock.Object, _mapper);
     }
 
     [Fact]

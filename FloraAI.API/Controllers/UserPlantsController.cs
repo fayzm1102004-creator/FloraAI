@@ -64,20 +64,8 @@ public class UserPlantsController : ControllerBase
                 return NotFound(new { message = "User not found" });
             }
 
-            var response = new UserPlantResponseDto
-            {
-                Id = userPlant.Id,
-                UserId = userPlant.UserId,
-                Nickname = userPlant.Nickname,
-                PlantType = userPlant.PlantType,
-                CurrentStatus = userPlant.CurrentStatus,
-                SavedTreatment = userPlant.SavedTreatment,
-                SavedCareInstructions = userPlant.SavedCareInstructions,
-                CreatedAt = userPlant.CreatedAt
-            };
-
             _logger.LogInformation($"Plant saved successfully: {userPlant.Id}");
-            return CreatedAtAction(nameof(GetUserPlants), new { userId = request.UserId }, response);
+            return CreatedAtAction(nameof(GetUserPlants), new { userId = request.UserId }, userPlant);
         }
         catch (Exception ex)
         {
@@ -115,20 +103,8 @@ public class UserPlantsController : ControllerBase
                 return NotFound(new { message = "User not found" });
             }
 
-            var response = userPlants.Select(p => new UserPlantResponseDto
-            {
-                Id = p.Id,
-                UserId = p.UserId,
-                Nickname = p.Nickname,
-                PlantType = p.PlantType,
-                CurrentStatus = p.CurrentStatus,
-                SavedTreatment = p.SavedTreatment,
-                SavedCareInstructions = p.SavedCareInstructions,
-                CreatedAt = p.CreatedAt
-            }).ToList();
-
-            _logger.LogInformation($"Retrieved {response.Count} plants for user {userId}");
-            return Ok(response);
+            _logger.LogInformation($"Retrieved {userPlants.Count} plants for user {userId}");
+            return Ok(userPlants);
         }
         catch (Exception ex)
         {

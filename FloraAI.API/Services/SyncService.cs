@@ -4,6 +4,7 @@ using FloraAI.API.Data;
 using FloraAI.API.DTOs.Sync;
 using FloraAI.API.DTOs.Diagnosis;
 using FloraAI.API.Services.Interfaces;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 /// <summary>
@@ -16,17 +17,20 @@ public class SyncService : ISyncService
     private readonly IDiagnosisService _diagnosisService;
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<SyncService> _logger;
+    private readonly IMapper _mapper;
 
     public SyncService(
         IConditionService conditionService,
         IDiagnosisService diagnosisService,
         ApplicationDbContext dbContext,
-        ILogger<SyncService> logger)
+        ILogger<SyncService> logger,
+        IMapper mapper)
     {
         _conditionService = conditionService;
         _diagnosisService = diagnosisService;
         _dbContext = dbContext;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -45,17 +49,7 @@ public class SyncService : ISyncService
 
             return new SyncPullResponseDto
             {
-                NewConditions = conditions
-                    .Select(c => new DTOs.Sync.SyncConditionDto
-                    {
-                        Id = c.Id,
-                        PlantType = c.PlantType,
-                        ConditionName = c.ConditionName,
-                        Treatment = c.Treatment,
-                        CareInstructions = c.CareInstructions,
-                        LastUpdated = c.LastUpdated
-                    })
-                    .ToList(),
+                NewConditions = _mapper.Map<List<SyncConditionDto>>(conditions),
                 SyncTimestamp = DateTime.UtcNow
             };
         }
@@ -76,7 +70,9 @@ public class SyncService : ISyncService
         {
             _logger.LogInformation($"Push sync received with {pendingScans.Count} scans");
 
-            var results = new List<object>();
+            var diagnosisResults = new List<SyncDiagnosisResultDto>();
+            int processedCount = 0;
+            int failedCount = 0;
 
             foreach (var scan in pendingScans)
             {
@@ -87,46 +83,22 @@ public class SyncService : ISyncService
                         scan.PlantType,
                         scan.ConditionName);
 
-                    results.Add(new
-                    {
-                        scan.PlantType,
-                        scan.ConditionName,
-                        diagnosis.Treatment,
-                        diagnosis.CareInstructions,
-                        diagnosis.ScannedAt,
-                        Success = true
-                    });
+                    diagnosisResults.Add(_mapper.Map<SyncDiagnosisResultDto>(diagnosis));
+                    processedCount++;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError($"Error processing scan {scan.PlantType}/{scan.ConditionName}: {ex.Message}");
-                    results.Add(new
-                    {
-                        scan.PlantType,
-                        scan.ConditionName,
-                        Error = ex.Message,
-                        Success = false
-                    });
+                    failedCount++;
                 }
             }
-
-            var diagnosisResults = results
-                .Where(r => (bool)((dynamic)r).Success)
-                .Select(r => new DTOs.Sync.SyncDiagnosisResultDto
-                {
-                    PlantType = (string)((dynamic)r).PlantType,
-                    ConditionName = (string)((dynamic)r).ConditionName,
-                    Treatment = (string)((dynamic)r).Treatment,
-                    CareInstructions = (string)((dynamic)r).CareInstructions
-                })
-                .ToList();
 
             return new SyncPushResponseDto
             {
                 DiagnosisResults = diagnosisResults,
                 SyncTimestamp = DateTime.UtcNow,
-                ProcessedCount = results.Count(r => (bool)((dynamic)r).Success),
-                FailedCount = results.Count(r => !(bool)((dynamic)r).Success)
+                ProcessedCount = processedCount,
+                FailedCount = failedCount
             };
         }
         catch (Exception ex)

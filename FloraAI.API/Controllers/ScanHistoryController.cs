@@ -46,16 +46,8 @@ public class ScanHistoryController : ControllerBase
                 return NotFound(new { message = "Plant not found" });
             }
 
-            var response = scanHistory.Select(s => new ScanHistoryDto
-            {
-                Id = s.Id,
-                UserPlantId = s.UserPlantId,
-                ConditionFound = s.ConditionFound,
-                ScanDate = s.ScanDate
-            }).OrderByDescending(s => s.ScanDate).ToList();
-
-            _logger.LogInformation($"Retrieved {response.Count} scan records for plant {userPlantId}");
-            return Ok(response);
+            _logger.LogInformation($"Retrieved {scanHistory.Count} scan records for plant {userPlantId}");
+            return Ok(scanHistory);
         }
         catch (Exception ex)
         {
@@ -93,16 +85,8 @@ public class ScanHistoryController : ControllerBase
                 return NotFound(new { message = "User not found or has no scan history" });
             }
 
-            var response = allScans.Select(s => new ScanHistoryDto
-            {
-                Id = s.Id,
-                UserPlantId = s.UserPlantId,
-                ConditionFound = s.ConditionFound,
-                ScanDate = s.ScanDate
-            }).OrderByDescending(s => s.ScanDate).ToList();
-
-            _logger.LogInformation($"Retrieved {response.Count} total scans for user {userId}");
-            return Ok(response);
+            _logger.LogInformation($"Retrieved {allScans.Count} total scans for user {userId}");
+            return Ok(allScans);
         }
         catch (Exception ex)
         {

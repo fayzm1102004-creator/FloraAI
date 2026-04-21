@@ -1,5 +1,6 @@
 namespace FloraAI.API.Services;
 
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using FloraAI.API.Data;
 using FloraAI.API.DTOs.User;
@@ -15,13 +16,16 @@ public class UserService : IUserService
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<UserService> _logger;
+    private readonly IMapper _mapper;
 
     public UserService(
         ApplicationDbContext dbContext,
-        ILogger<UserService> logger)
+        ILogger<UserService> logger,
+        IMapper mapper)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -52,7 +56,7 @@ public class UserService : IUserService
 
             _logger.LogInformation($"User registered: {user.Email}");
 
-            return MapToResponseDto(user);
+            return _mapper.Map<UserResponseDto>(user);
         }
         catch (Exception ex)
         {
@@ -86,7 +90,7 @@ public class UserService : IUserService
 
             _logger.LogInformation($"User logged in: {user.Email}");
 
-            return MapToResponseDto(user);
+            return _mapper.Map<UserResponseDto>(user);
         }
         catch (Exception ex)
         {
@@ -133,16 +137,4 @@ public class UserService : IUserService
         return hashOfInput.Equals(hash);
     }
 
-    /// <summary>
-    /// Maps User entity to response DTO
-    /// </summary>
-    private UserResponseDto MapToResponseDto(User user)
-    {
-        return new UserResponseDto
-        {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email
-        };
-    }
 }

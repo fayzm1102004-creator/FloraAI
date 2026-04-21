@@ -3,8 +3,10 @@ namespace FloraAI.API.Services;
 using Microsoft.EntityFrameworkCore;
 using FloraAI.API.Data;
 using FloraAI.API.DTOs.UserPlant;
+using FloraAI.API.DTOs.ScanHistory;
 using FloraAI.API.Models.Entities;
 using FloraAI.API.Services.Interfaces;
+using AutoMapper;
 
 /// <summary>
 /// Implementation of UserPlantService - manages user's personal plant library
@@ -13,24 +15,22 @@ public class UserPlantService : IUserPlantService
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<UserPlantService> _logger;
+    private readonly IMapper _mapper;
 
     public UserPlantService(
         ApplicationDbContext dbContext,
-        ILogger<UserPlantService> logger)
+        ILogger<UserPlantService> logger,
+        IMapper mapper)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _mapper = mapper;
     }
 
-    /// <summary>
-    /// Saves a new plant to user's library
-    /// This happens after user approves a diagnosis result
-    /// </summary>
     public async Task<UserPlantResponseDto> SaveUserPlantAsync(int userId, SaveUserPlantDto dto)
     {
         try
         {
-            // Verify user exists
             var user = await _dbContext.Users.FindAsync(userId);
             if (user == null)
             {
@@ -53,7 +53,7 @@ public class UserPlantService : IUserPlantService
 
             _logger.LogInformation($"Plant saved to library for User {userId}: {dto.Nickname}");
 
-            return MapToResponseDto(userPlant);
+            return _mapper.Map<UserPlantResponseDto>(userPlant);
         }
         catch (Exception ex)
         {
@@ -62,9 +62,6 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Retrieves all plants in user's library
-    /// </summary>
     public async Task<List<UserPlantResponseDto>> GetUserPlantsAsync(int userId)
     {
         try
@@ -75,7 +72,7 @@ public class UserPlantService : IUserPlantService
                 .Include(up => up.ScanHistories)
                 .ToListAsync();
 
-            return userPlants.Select(MapToResponseDto).ToList();
+            return _mapper.Map<List<UserPlantResponseDto>>(userPlants);
         }
         catch (Exception ex)
         {
@@ -84,9 +81,6 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Retrieves a specific plant by ID
-    /// </summary>
     public async Task<UserPlantResponseDto?> GetUserPlantByIdAsync(int plantId)
     {
         try
@@ -95,7 +89,7 @@ public class UserPlantService : IUserPlantService
                 .Include(up => up.ScanHistories)
                 .FirstOrDefaultAsync(up => up.Id == plantId);
 
-            return userPlant != null ? MapToResponseDto(userPlant) : null;
+            return _mapper.Map<UserPlantResponseDto?>(userPlant);
         }
         catch (Exception ex)
         {
@@ -104,9 +98,6 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Updates a plant's status
-    /// </summary>
     public async Task<UserPlantResponseDto> UpdatePlantStatusAsync(int plantId, string status)
     {
         try
@@ -127,7 +118,7 @@ public class UserPlantService : IUserPlantService
 
             _logger.LogInformation($"UserPlant {plantId} status updated to {status}");
 
-            return MapToResponseDto(userPlant);
+            return _mapper.Map<UserPlantResponseDto>(userPlant);
         }
         catch (Exception ex)
         {
@@ -136,9 +127,6 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Deletes a plant from user's library
-    /// </summary>
     public async Task<bool> DeleteUserPlantAsync(int plantId)
     {
         try
@@ -164,10 +152,7 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Get scan history for a specific plant
-    /// </summary>
-    public async Task<List<DTOs.ScanHistory.ScanHistoryDto>> GetScanHistoryAsync(int userPlantId)
+    public async Task<List<ScanHistoryDto>> GetScanHistoryAsync(int userPlantId)
     {
         try
         {
@@ -176,13 +161,7 @@ public class UserPlantService : IUserPlantService
                 .OrderByDescending(sh => sh.ScanDate)
                 .ToListAsync();
 
-            return scans.Select(s => new DTOs.ScanHistory.ScanHistoryDto
-            {
-                Id = s.Id,
-                UserPlantId = s.UserPlantId,
-                ConditionFound = s.ConditionFound,
-                ScanDate = s.ScanDate
-            }).ToList();
+            return _mapper.Map<List<ScanHistoryDto>>(scans);
         }
         catch (Exception ex)
         {
@@ -191,10 +170,7 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Get all scans for a user
-    /// </summary>
-    public async Task<List<DTOs.ScanHistory.ScanHistoryDto>> GetUserScanHistoryAsync(int userId)
+    public async Task<List<ScanHistoryDto>> GetUserScanHistoryAsync(int userId)
     {
         try
         {
@@ -204,13 +180,7 @@ public class UserPlantService : IUserPlantService
                 .OrderByDescending(sh => sh.ScanDate)
                 .ToListAsync();
 
-            return scans.Select(s => new DTOs.ScanHistory.ScanHistoryDto
-            {
-                Id = s.Id,
-                UserPlantId = s.UserPlantId,
-                ConditionFound = s.ConditionFound,
-                ScanDate = s.ScanDate
-            }).ToList();
+            return _mapper.Map<List<ScanHistoryDto>>(scans);
         }
         catch (Exception ex)
         {
@@ -219,64 +189,27 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    /// <summary>
-    /// Get latest scan for each user plant
-    /// </summary>
-    public async Task<List<DTOs.ScanHistory.ScanHistoryDto>> GetLatestScansAsync(int userId)
+    public async Task<List<ScanHistoryDto>> GetLatestScansAsync(int userId)
     {
         try
         {
-            var userPlants = await _dbContext.UserPlants
+            var userPlantIds = await _dbContext.UserPlants
                 .Where(up => up.UserId == userId)
                 .Select(up => up.Id)
                 .ToListAsync();
 
-            var latestScans = new List<DTOs.ScanHistory.ScanHistoryDto>();
+            var latestScans = await _dbContext.ScanHistories
+                .Where(sh => userPlantIds.Contains(sh.UserPlantId))
+                .GroupBy(sh => sh.UserPlantId)
+                .Select(g => g.OrderByDescending(sh => sh.ScanDate).First())
+                .ToListAsync();
 
-            foreach (var plantId in userPlants)
-            {
-                var latestScan = await _dbContext.ScanHistories
-                    .Where(sh => sh.UserPlantId == plantId)
-                    .OrderByDescending(sh => sh.ScanDate)
-                    .FirstOrDefaultAsync();
-
-                if (latestScan != null)
-                {
-                    latestScans.Add(new DTOs.ScanHistory.ScanHistoryDto
-                    {
-                        Id = latestScan.Id,
-                        UserPlantId = latestScan.UserPlantId,
-                        ConditionFound = latestScan.ConditionFound,
-                        ScanDate = latestScan.ScanDate
-                    });
-                }
-            }
-
-            return latestScans;
+            return _mapper.Map<List<ScanHistoryDto>>(latestScans);
         }
         catch (Exception ex)
         {
             _logger.LogError($"Error retrieving latest scans: {ex.Message}");
             throw;
         }
-    }
-
-    /// <summary>
-    /// Maps UserPlant entity to response DTO
-    /// </summary>
-    private UserPlantResponseDto MapToResponseDto(UserPlant userPlant)
-    {
-        return new UserPlantResponseDto
-        {
-            Id = userPlant.Id,
-            UserId = userPlant.UserId,
-            Nickname = userPlant.Nickname,
-            PlantType = userPlant.PlantType,
-            CurrentStatus = userPlant.CurrentStatus,
-            SavedTreatment = userPlant.SavedTreatment,
-            SavedCareInstructions = userPlant.SavedCareInstructions ?? string.Empty,
-            CreatedAt = userPlant.CreatedAt,
-            ScanCount = userPlant.ScanHistories?.Count ?? 0
-        };
     }
 }

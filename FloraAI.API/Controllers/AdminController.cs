@@ -10,11 +10,13 @@ public class AdminController : ControllerBase
 {
     private readonly IConditionService _conditionService;
     private readonly ILogger<AdminController> _logger;
+    private readonly AutoMapper.IMapper _mapper;
 
-    public AdminController(IConditionService conditionService, ILogger<AdminController> logger)
+    public AdminController(IConditionService conditionService, ILogger<AdminController> logger, AutoMapper.IMapper mapper)
     {
         _conditionService = conditionService;
         _logger = logger;
+        _mapper = mapper;
     }
 
     [HttpPost("refresh-condition")]
@@ -24,6 +26,7 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "plantType and conditionName required" });
 
         var result = await _conditionService.ForceRefreshConditionAsync(request.PlantType, request.ConditionName, request.DetectedCategory);
-        return Ok(result);
+        var response = _mapper.Map<FloraAI.API.DTOs.Conditions.ConditionResponseDto>(result);
+        return Ok(response);
     }
 }

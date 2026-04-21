@@ -11,15 +11,18 @@ public class DiagnosisController : ControllerBase
     private readonly IDiagnosisService _diagnosisService;
     private readonly IConditionService _conditionService;
     private readonly ILogger<DiagnosisController> _logger;
+    private readonly AutoMapper.IMapper _mapper;
 
     public DiagnosisController(
         IDiagnosisService diagnosisService,
         IConditionService conditionService,
-        ILogger<DiagnosisController> logger)
+        ILogger<DiagnosisController> logger,
+        AutoMapper.IMapper mapper)
     {
         _diagnosisService = diagnosisService;
         _conditionService = conditionService;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -62,14 +65,11 @@ public class DiagnosisController : ControllerBase
                     new { message = "فشل في الحصول على معلومات التشخيص" });
             }
 
-            var response = new DiagnosisScanResponseDto
+            var response = _mapper.Map<DiagnosisScanResponseDto>(condition);
+            if (string.IsNullOrWhiteSpace(response.CareInstructions))
             {
-                PlantType = condition.PlantType,
-                ConditionName = condition.ConditionName,
-                Treatment = condition.Treatment, // keep null when no treatment
-                CareInstructions = condition.CareInstructions ?? "لا توجد تعليمات رعاية متاحة",
-                LastUpdated = condition.LastUpdated
-            };
+                 response.CareInstructions = "لا توجد تعليمات رعاية متاحة";
+            }
 
             _logger.LogInformation($"Diagnosis completed successfully for {request.PlantType}/{request.ConditionName}");
             return Ok(response);

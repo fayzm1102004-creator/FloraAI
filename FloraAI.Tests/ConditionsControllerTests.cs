@@ -19,12 +19,17 @@ public class ConditionsControllerTests
     private readonly ConditionsController _controller;
     private readonly Mock<IConditionService> _serviceMock;
     private readonly Mock<ILogger<ConditionsController>> _loggerMock;
+    private readonly AutoMapper.IMapper _mapper;
 
     public ConditionsControllerTests()
     {
         _serviceMock = new Mock<IConditionService>();
         _loggerMock = new Mock<ILogger<ConditionsController>>();
-        _controller = new ConditionsController(_serviceMock.Object, _loggerMock.Object);
+
+        var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<FloraAI.API.Mappings.MappingProfile>(), Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance);
+        _mapper = config.CreateMapper();
+
+        _controller = new ConditionsController(_serviceMock.Object, _loggerMock.Object, _mapper);
     }
 
     #region GetPlantConditions Tests

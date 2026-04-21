@@ -31,7 +31,11 @@ public class UserPlantServiceTests
         _dbContext.SaveChanges();
 
         _loggerMock = new Mock<ILogger<UserPlantService>>();
-        _service = new UserPlantService(_dbContext, _loggerMock.Object);
+        
+        var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<FloraAI.API.Mappings.MappingProfile>(), Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance);
+        var mapper = config.CreateMapper();
+
+        _service = new UserPlantService(_dbContext, _loggerMock.Object, mapper);
     }
 
     [Fact]

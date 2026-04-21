@@ -10,11 +10,13 @@ public class ConditionsController : ControllerBase
 {
     private readonly IConditionService _conditionService;
     private readonly ILogger<ConditionsController> _logger;
+    private readonly AutoMapper.IMapper _mapper;
 
-    public ConditionsController(IConditionService conditionService, ILogger<ConditionsController> logger)
+    public ConditionsController(IConditionService conditionService, ILogger<ConditionsController> logger, AutoMapper.IMapper mapper)
     {
         _conditionService = conditionService;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -45,15 +47,7 @@ public class ConditionsController : ControllerBase
                 return Ok(new List<ConditionResponseDto>());
             }
 
-            var response = conditions.Select(c => new ConditionResponseDto
-            {
-                Id = c.Id,
-                PlantType = c.PlantType,
-                ConditionName = c.ConditionName,
-                Treatment = c.Treatment,
-                CareInstructions = c.CareInstructions,
-                LastUpdated = c.LastUpdated
-            }).ToList();
+            var response = _mapper.Map<List<ConditionResponseDto>>(conditions);
 
             _logger.LogInformation($"Retrieved {response.Count} conditions for plant type: {plantType}");
             return Ok(response);
@@ -97,15 +91,7 @@ public class ConditionsController : ControllerBase
                 return NotFound(new { message = "Condition not found" });
             }
 
-            var response = new ConditionResponseDto
-            {
-                Id = condition.Id,
-                PlantType = condition.PlantType,
-                ConditionName = condition.ConditionName,
-                Treatment = condition.Treatment,
-                CareInstructions = condition.CareInstructions,
-                LastUpdated = condition.LastUpdated
-            };
+            var response = _mapper.Map<ConditionResponseDto>(condition);
 
             _logger.LogInformation($"Retrieved condition successfully");
             return Ok(response);
@@ -138,15 +124,7 @@ public class ConditionsController : ControllerBase
             if (conditions == null)
                 conditions = new List<Models.Entities.ConditionsDictionary>();
 
-            var response = conditions.Select(c => new ConditionResponseDto
-            {
-                Id = c.Id,
-                PlantType = c.PlantType,
-                ConditionName = c.ConditionName,
-                Treatment = c.Treatment,
-                CareInstructions = c.CareInstructions,
-                LastUpdated = c.LastUpdated
-            }).ToList();
+            var response = _mapper.Map<List<ConditionResponseDto>>(conditions);
 
             _logger.LogInformation($"Retrieved {response.Count} total conditions");
             return Ok(response);

@@ -32,12 +32,16 @@ public class SyncServiceTests
         _conditionServiceMock = new Mock<IConditionService>();
         _diagnosisServiceMock = new Mock<IDiagnosisService>();
         _loggerMock = new Mock<ILogger<SyncService>>();
+        
+        var config = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<FloraAI.API.Mappings.MappingProfile>(), Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance);
+        var mapper = config.CreateMapper();
 
         _service = new SyncService(
             _conditionServiceMock.Object, 
             _diagnosisServiceMock.Object, 
             _dbContext, 
-            _loggerMock.Object);
+            _loggerMock.Object,
+            mapper);
     }
 
     [Fact]

@@ -11,16 +11,17 @@
 *   **🧠 نظام التشخيص الهجين (Hybrid AI):** يجمع بين سرعة المعالجة على الموبايل (Vision Model) وعمق التحليل في السيرفر (Gemini API).
 *   **💾 التخزين الذكي (Efficiency):** السيرفر "يتعلم" ويحفظ الإجابات؛ إذا سأل مستخدم عن مرض معين، يحفظ السيرفر الرد لتقديمه فوراً للمستخدم القادم بدون تكلفة إضافية.
 *   **🌐 مزامنة Offline-First:** التطبيق مصمم ليعمل في الحقول والمزارع حيث الإنترنت ضعيف، مع نظام مزامنة ذكي عند العودة للشبكة.
-*   **🛡️ استقرار هندسي:** الكود محمي بـ **69 اختبار وحدة** (Unit Tests) تضمن أنه لن ينهار أبداً عند التحديث.
+*   **🛡️ استقرار هندسي:** الكود محمي بـ **68 اختبار وحدة** (Unit Tests) تضمن الجودة العالية، مع استخدام **AutoMapper** لضمان نظافة واحترافية تحويل البيانات.
 
 ---
 
 ## 🏗️ التقنيات المستخدمة (The Stack)
 *   **Framework:** .NET 8 (ASP.NET Core)
 *   **Artificial Intelligence:** Google Gemini AI API
+*   **Mapping:** AutoMapper 16.1.1 (لأتمتة تحويل البيانات بين الطبقات)
 *   **Database:** Entity Framework Core (SQL Server / SQLite)
 *   **Testing:** xUnit, Moq, FluentAssertions
-*   **Documentation:** Swagger UI (OpenAPI)
+*   **Documentation:** Swagger UI 6.6.2 (أحدث إصدار أمني مستقر)
 
 ---
 

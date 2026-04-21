@@ -10,11 +10,13 @@ public class SyncController : ControllerBase
 {
     private readonly ISyncService _syncService;
     private readonly ILogger<SyncController> _logger;
+    private readonly AutoMapper.IMapper _mapper;
 
-    public SyncController(ISyncService syncService, ILogger<SyncController> logger)
+    public SyncController(ISyncService syncService, ILogger<SyncController> logger, AutoMapper.IMapper mapper)
     {
         _syncService = syncService;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -81,13 +83,7 @@ public class SyncController : ControllerBase
             _logger.LogInformation($"Push sync requested with {request.PendingScans.Count()} pending scans");
 
             var result = await _syncService.PushPendingScansAsync(
-                request.PendingScans
-                    .Select(p => new DTOs.Diagnosis.DiagnosisScanRequestDto
-                    {
-                        PlantType = p.PlantType,
-                        ConditionName = p.ConditionName
-                    })
-                    .ToList());
+                _mapper.Map<List<FloraAI.API.DTOs.Diagnosis.DiagnosisScanRequestDto>>(request.PendingScans));
 
             if (result == null)
             {

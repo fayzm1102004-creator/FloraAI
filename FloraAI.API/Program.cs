@@ -42,6 +42,9 @@ builder.Services.AddScoped<IUserPlantService, UserPlantService>();
 // Offline-First Sync
 builder.Services.AddScoped<ISyncService, SyncService>();
 
+// AutoMapper for Entity-DTO mapping
+builder.Services.AddAutoMapper(typeof(FloraAI.API.Mappings.MappingProfile));
+
 // Logging
 builder.Services.AddLogging();
 
