@@ -62,21 +62,29 @@ public class UserPlantService : IUserPlantService
         }
     }
 
-    public async Task<List<UserPlantResponseDto>> GetUserPlantsAsync(int userId)
+    public async Task<FloraAI.API.DTOs.Common.PagedResponse<UserPlantResponseDto>> GetUserPlantsAsync(int userId, int pageNumber = 1, int pageSize = 10)
     {
         try
         {
-            var userPlants = await _dbContext.UserPlants
-                .Where(up => up.UserId == userId)
+            var query = _dbContext.UserPlants
+                .AsNoTracking()
+                .Where(up => up.UserId == userId);
+
+            var totalRecords = await query.CountAsync();
+            
+            var userPlants = await query
                 .OrderByDescending(up => up.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Include(up => up.ScanHistories)
                 .ToListAsync();
 
-            return _mapper.Map<List<UserPlantResponseDto>>(userPlants);
+            var dtos = _mapper.Map<List<UserPlantResponseDto>>(userPlants);
+            return new FloraAI.API.DTOs.Common.PagedResponse<UserPlantResponseDto>(dtos, pageNumber, pageSize, totalRecords);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error retrieving user plants: {ex.Message}");
+            _logger.LogError($"Error retrieving user plants with pagination: {ex.Message}");
             throw;
         }
     }

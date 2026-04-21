@@ -17,46 +17,49 @@ public class UserService : IUserService
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<UserService> _logger;
     private readonly IMapper _mapper;
+    private readonly ITokenService _tokenService;
+    private readonly IConfiguration _config;
 
     public UserService(
         ApplicationDbContext dbContext,
         ILogger<UserService> logger,
-        IMapper mapper)
+        IMapper mapper,
+        ITokenService tokenService,
+        IConfiguration config)
     {
         _dbContext = dbContext;
         _logger = logger;
         _mapper = mapper;
+        _tokenService = tokenService;
+        _config = config;
     }
 
     /// <summary>
     /// Registers a new user with email and password
     /// </summary>
-    public async Task<UserResponseDto> RegisterAsync(string fullName, string email, string password)
+    public async Task<AuthResponseDto> RegisterAsync(string fullName, string email, string password)
     {
         try
         {
-            // Check if email already exists
             if (await EmailExistsAsync(email))
             {
                 throw new InvalidOperationException("البريد الإلكتروني مسجل بالفعل");
             }
 
-            // Hash password
             var passwordHash = HashPassword(password);
 
             var user = new User
             {
                 FullName = fullName,
                 Email = email,
-                PasswordHash = passwordHash
+                PasswordHash = passwordHash,
+                Role = Models.Enums.UserRole.User // Default role
             };
 
             _dbContext.Users.Add(user);
             await _dbContext.SaveChangesAsync();
 
-            _logger.LogInformation($"User registered: {user.Email}");
-
-            return _mapper.Map<UserResponseDto>(user);
+            return await GenerateAuthResponse(user);
         }
         catch (Exception ex)
         {
@@ -66,37 +69,67 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// Authenticates user with email and password
+    /// Authenticates user and returns tokens
     /// </summary>
-    public async Task<UserResponseDto?> LoginAsync(string email, string password)
+    public async Task<AuthResponseDto?> LoginAsync(string email, string password)
     {
         try
         {
             var user = await _dbContext.Users
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
 
-            if (user == null)
-            {
-                _logger.LogWarning($"Login attempt for non-existent email: {email}");
-                return null;
-            }
-
-            // Verify password
-            if (!VerifyPassword(password, user.PasswordHash))
+            if (user == null || !VerifyPassword(password, user.PasswordHash))
             {
                 _logger.LogWarning($"Failed login attempt for: {email}");
                 return null;
             }
 
-            _logger.LogInformation($"User logged in: {user.Email}");
-
-            return _mapper.Map<UserResponseDto>(user);
+            return await GenerateAuthResponse(user);
         }
         catch (Exception ex)
         {
             _logger.LogError($"Error during login: {ex.Message}");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Refreshes access token using a valid refresh token
+    /// </summary>
+    public async Task<AuthResponseDto?> RefreshTokenAsync(string token, string refreshToken)
+    {
+        var principal = _tokenService.GetPrincipalFromExpiredToken(token);
+        var userEmail = principal.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+
+        if (userEmail == null) return null;
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == userEmail);
+
+        if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiry <= DateTime.UtcNow)
+        {
+            return null;
+        }
+
+        return await GenerateAuthResponse(user);
+    }
+
+    private async Task<AuthResponseDto> GenerateAuthResponse(User user)
+    {
+        var accessToken = _tokenService.GenerateAccessToken(user);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(double.Parse(_config["Jwt:RefreshTokenValidityInDays"]!));
+
+        await _dbContext.SaveChangesAsync();
+
+        return new AuthResponseDto
+        {
+            Token = accessToken,
+            RefreshToken = refreshToken,
+            Expiration = DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:TokenValidityInMinutes"]!)),
+            User = _mapper.Map<UserResponseDto>(user)
+        };
     }
 
     /// <summary>
@@ -117,7 +150,7 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// Hashes a password using PBKDF2
+    /// Hashes a password using SHA256
     /// </summary>
     private string HashPassword(string password)
     {
@@ -136,5 +169,4 @@ public class UserService : IUserService
         var hashOfInput = HashPassword(password);
         return hashOfInput.Equals(hash);
     }
-
 }

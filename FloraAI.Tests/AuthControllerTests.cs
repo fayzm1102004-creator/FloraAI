@@ -32,19 +32,23 @@ public class AuthControllerTests
             Email = "john@example.com",
             Password = "SecurePass123!"
         };
-        var user = new UserResponseDto { Id = 1, FullName = "John Doe", Email = "john@example.com" };
+        var authResponse = new AuthResponseDto 
+        { 
+            Token = "Access", 
+            RefreshToken = "Refresh", 
+            User = new UserResponseDto { Id = 1, FullName = "John Doe", Email = "john@example.com" } 
+        };
         _userServiceMock.Setup(s => s.RegisterAsync(registerDto.FullName, registerDto.Email, registerDto.Password))
-                        .ReturnsAsync(user);
+                        .ReturnsAsync(authResponse);
 
         // Act
         var result = await _controller.Register(registerDto);
 
         // Assert
         var createdResult = Assert.IsType<CreatedAtActionResult>(result);
-        var responseDto = Assert.IsType<UserResponseDto>(createdResult.Value);
-        Assert.Equal(user.Id, responseDto.Id);
-        Assert.Equal(user.FullName, responseDto.FullName);
-        Assert.Equal(user.Email, responseDto.Email);
+        var responseDto = Assert.IsType<AuthResponseDto>(createdResult.Value);
+        Assert.Equal("Access", responseDto.Token);
+        Assert.Equal(1, responseDto.User.Id);
     }
 
     [Fact]
@@ -52,19 +56,22 @@ public class AuthControllerTests
     {
         // Arrange
         var loginDto = new UserLoginDto { Email = "john@example.com", Password = "SecurePass123!" };
-        var user = new UserResponseDto { Id = 1, FullName = "John Doe", Email = "john@example.com" };
+        var authResponse = new AuthResponseDto 
+        { 
+            Token = "Access", 
+            RefreshToken = "Refresh", 
+            User = new UserResponseDto { Id = 1, FullName = "John Doe", Email = "john@example.com" } 
+        };
         _userServiceMock.Setup(s => s.LoginAsync(loginDto.Email, loginDto.Password))
-                        .ReturnsAsync(user);
+                        .ReturnsAsync(authResponse);
 
         // Act
         var result = await _controller.Login(loginDto);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var responseDto = Assert.IsType<UserResponseDto>(okResult.Value);
-        Assert.Equal(user.Id, responseDto.Id);
-        Assert.Equal(user.FullName, responseDto.FullName);
-        Assert.Equal(user.Email, responseDto.Email);
+        var responseDto = Assert.IsType<AuthResponseDto>(okResult.Value);
+        Assert.Equal("Access", responseDto.Token);
     }
 
     [Fact]
@@ -73,7 +80,7 @@ public class AuthControllerTests
         // Arrange
         var loginDto = new UserLoginDto { Email = "john@example.com", Password = "WrongPass" };
         _userServiceMock.Setup(s => s.LoginAsync(loginDto.Email, loginDto.Password))
-                        .ReturnsAsync((UserResponseDto?)null);
+                        .ReturnsAsync((AuthResponseDto?)null);
 
         // Act
         var result = await _controller.Login(loginDto);
@@ -81,6 +88,24 @@ public class AuthControllerTests
         // Assert
         var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
         Assert.NotNull(unauthorizedResult.Value);
+    }
+
+    [Fact]
+    public async Task RefreshToken_ValidTokens_ReturnsOk()
+    {
+        // Arrange
+        var request = new TokenRequestDto { Token = "old", RefreshToken = "valid" };
+        var authResponse = new AuthResponseDto { Token = "new", RefreshToken = "new_refresh", User = new UserResponseDto { Id = 1, FullName = "N", Email = "E" } };
+        _userServiceMock.Setup(s => s.RefreshTokenAsync("old", "valid"))
+            .ReturnsAsync(authResponse);
+
+        // Act
+        var result = await _controller.RefreshToken(request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<AuthResponseDto>(okResult.Value);
+        Assert.Equal("new", response.Token);
     }
     [Fact]
     public async Task Register_UserExists_ReturnsConflict()

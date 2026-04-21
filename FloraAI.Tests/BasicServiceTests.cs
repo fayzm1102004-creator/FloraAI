@@ -34,11 +34,11 @@ public class ControllerTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>()))
-            .ReturnsAsync(new UserResponseDto
+            .ReturnsAsync(new AuthResponseDto
             {
-                Id = 1,
-                FullName = "John Doe",
-                Email = "john@example.com"
+                Token = "T",
+                RefreshToken = "R",
+                User = new UserResponseDto { Id = 1, FullName = "John Doe", Email = "john@example.com" }
             });
 
         // Assert
@@ -58,11 +58,11 @@ public class ControllerTests
 
         userServiceMock
             .Setup(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new UserResponseDto
+            .ReturnsAsync(new AuthResponseDto
             {
-                Id = 1,
-                FullName = "John Doe",
-                Email = "john@example.com"
+                Token = "T",
+                RefreshToken = "R",
+                User = new UserResponseDto { Id = 1, FullName = "John Doe", Email = "john@example.com" }
             });
 
         // Assert

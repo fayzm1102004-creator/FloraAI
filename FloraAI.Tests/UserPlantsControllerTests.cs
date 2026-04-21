@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using FloraAI.API.Controllers;
 using FloraAI.API.Services.Interfaces;
 using FloraAI.API.DTOs.UserPlant;
+using FloraAI.API.DTOs.Common;
 using FloraAI.API.Models.Entities;
 
 namespace FloraAI.Tests;
@@ -25,24 +26,18 @@ public class UserPlantsControllerTests
         _serviceMock = new Mock<IUserPlantService>();
         _loggerMock = new Mock<ILogger<UserPlantsController>>();
         _controller = new UserPlantsController(_serviceMock.Object, _loggerMock.Object);
-
-        var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] {
-            new Claim(ClaimTypes.NameIdentifier, "1")
-        }, "mock"));
-        _controller.ControllerContext = new ControllerContext {
-            HttpContext = new DefaultHttpContext { User = user }
-        };
     }
 
     [Fact]
     public async Task GetUserPlants_ValidId_ReturnsOk()
     {
         // Arrange
-        _serviceMock.Setup(s => s.GetUserPlantsAsync(1))
-            .ReturnsAsync(new List<UserPlantResponseDto>());
+        var pagedResponse = new PagedResponse<UserPlantResponseDto>(new List<UserPlantResponseDto>(), 1, 10, 0);
+        _serviceMock.Setup(s => s.GetUserPlantsAsync(1, 1, 10))
+            .ReturnsAsync(pagedResponse);
 
         // Act
-        var result = await _controller.GetUserPlants(1);
+        var result = await _controller.GetUserPlants(1, 1, 10);
 
         // Assert
         Assert.IsType<OkObjectResult>(result);
@@ -86,20 +81,6 @@ public class UserPlantsControllerTests
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task GetUserPlants_UserNotFound_ReturnsNotFound()
-    {
-        // Arrange
-        _serviceMock.Setup(s => s.GetUserPlantsAsync(99))
-            .ReturnsAsync((List<UserPlantResponseDto>?)null);
-
-        // Act
-        var result = await _controller.GetUserPlants(99);
-
-        // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]

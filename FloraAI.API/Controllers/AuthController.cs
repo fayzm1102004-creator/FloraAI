@@ -20,14 +20,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Register a new user account.
     /// </summary>
-    /// <remarks>
-    /// Creates a new user with email and password.
-    /// Returns user details on success.
-    /// </remarks>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Register([FromBody] UserRegisterDto request)
     {
         try
@@ -35,34 +29,26 @@ public class AuthController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var user = await _userService.RegisterAsync(request.FullName, request.Email, request.Password);
+            var authResponse = await _userService.RegisterAsync(request.FullName, request.Email, request.Password);
             
-            _logger.LogInformation($"User registered successfully: {user.Email}");
-            return CreatedAtAction(nameof(Register), user);
+            return CreatedAtAction(nameof(Register), authResponse);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning($"Registration failed: {ex.Message}");
             return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError($"Unexpected error during registration: {ex.Message}");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "حدث خطأ أثناء التسجيل" });
+            return StatusCode(500, new { message = "حدث خطأ أثناء التسجيل" });
         }
     }
 
     /// <summary>
     /// Login with email and password.
     /// </summary>
-    /// <remarks>
-    /// Authenticates user credentials and returns user details if valid.
-    /// </remarks>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login([FromBody] UserLoginDto request)
     {
         try
@@ -70,22 +56,45 @@ public class AuthController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var user = await _userService.LoginAsync(request.Email, request.Password);
+            var authResponse = await _userService.LoginAsync(request.Email, request.Password);
             
-            if (user == null)
+            if (authResponse == null)
             {
-                _logger.LogWarning($"Login failed for email: {request.Email}");
                 return Unauthorized(new { message = "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
             }
 
-            _logger.LogInformation($"User logged in successfully: {user.Email}");
-            return Ok(user);
+            return Ok(authResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError($"Unexpected error during login: {ex.Message}");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "حدث خطأ أثناء تسجيل الدخول" });
+            return StatusCode(500, new { message = "حدث خطأ أثناء تسجيل الدخول" });
+        }
+    }
+
+    /// <summary>
+    /// Refresh the access token using a refresh token.
+    /// </summary>
+    [HttpPost("refresh-token")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDto request)
+    {
+        try
+        {
+            var authResponse = await _userService.RefreshTokenAsync(request.Token, request.RefreshToken);
+
+            if (authResponse == null)
+            {
+                return Unauthorized(new { message = "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى" });
+            }
+
+            return Ok(authResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error refreshing token: {ex.Message}");
+            return Unauthorized(new { message = "طلب غير صالح" });
         }
     }
 }

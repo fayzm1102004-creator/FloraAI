@@ -46,12 +46,12 @@ public interface IConditionService
     Task<ConditionsDictionary> ForceRefreshConditionAsync(string plantType, string conditionName, string? detectedCategory = null);
 
     /// <summary>
-    /// Get all unique plants from lookup
+    /// Get unique plants from lookup with pagination
     /// </summary>
-    Task<List<PlantLookupDto>> GetAllPlantsAsync();
+    Task<FloraAI.API.DTOs.Common.PagedResponse<PlantLookupDto>> GetAllPlantsAsync(int pageNumber = 1, int pageSize = 10);
 
     /// <summary>
-    /// Search plants by name
+    /// Search plants by name with pagination
     /// </summary>
-    Task<List<PlantLookupDto>> SearchPlantsAsync(string query);
+    Task<FloraAI.API.DTOs.Common.PagedResponse<PlantLookupDto>> SearchPlantsAsync(string query, int pageNumber = 1, int pageSize = 10);
 }

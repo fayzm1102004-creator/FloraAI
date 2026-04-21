@@ -11,12 +11,17 @@ public interface IUserService
     /// <summary>
     /// Registers a new user
     /// </summary>
-    Task<UserResponseDto> RegisterAsync(string fullName, string email, string password);
+    Task<AuthResponseDto> RegisterAsync(string fullName, string email, string password);
 
     /// <summary>
-    /// Authenticates user and returns user info
+    /// Authenticates user and returns tokens
     /// </summary>
-    Task<UserResponseDto?> LoginAsync(string email, string password);
+    Task<AuthResponseDto?> LoginAsync(string email, string password);
+
+    /// <summary>
+    /// Refreshes access token using a valid refresh token
+    /// </summary>
+    Task<AuthResponseDto?> RefreshTokenAsync(string token, string refreshToken);
 
     /// <summary>
     /// Retrieves user by ID

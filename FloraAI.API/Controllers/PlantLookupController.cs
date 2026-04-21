@@ -18,69 +18,55 @@ public class PlantLookupController : ControllerBase
     }
 
     /// <summary>
-    /// Get all available plants in the system.
+    /// Get available plants with pagination.
     /// </summary>
-    /// <remarks>
-    /// Returns a list of all plant types with their common names.
-    /// Useful for mobile app UI plant selection lists.
-    /// </remarks>
     [HttpGet("all")]
-    [ProducesResponseType(typeof(IEnumerable<PlantLookupDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetAllPlants()
+    [ProducesResponseType(typeof(FloraAI.API.DTOs.Common.PagedResponse<PlantLookupDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllPlants([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         try
         {
-            _logger.LogInformation("Retrieving all plants");
+            if (pageNumber <= 0) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
 
-            var plants = await _conditionService.GetAllPlantsAsync();
+            _logger.LogInformation($"Retrieving plants (Page: {pageNumber}, Size: {pageSize})");
 
-            if (plants == null || plants.Count == 0)
-                plants = new List<PlantLookupDto>();
+            var pagedResponse = await _conditionService.GetAllPlantsAsync(pageNumber, pageSize);
 
-            _logger.LogInformation($"Retrieved {plants.Count} unique plants");
-            return Ok(plants);
+            return Ok(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError($"Unexpected error retrieving plants: {ex.Message}");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { message = "An error occurred while retrieving plants" });
+            return StatusCode(500, new { message = "An error occurred while retrieving plants" });
         }
     }
 
     /// <summary>
-    /// Search for a specific plant by common name.
+    /// Search for a specific plant with pagination.
     /// </summary>
-    /// <remarks>
-    /// Returns plant information if found.
-    /// </remarks>
     [HttpGet("search")]
-    [ProducesResponseType(typeof(IEnumerable<PlantLookupDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SearchPlants([FromQuery] string query)
+    [ProducesResponseType(typeof(FloraAI.API.DTOs.Common.PagedResponse<PlantLookupDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchPlants([FromQuery] string query, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest(new { message = "Search query is required" });
 
-            _logger.LogInformation($"Searching plants with query: {query}");
+            if (pageNumber <= 0) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
 
-            var plants = await _conditionService.SearchPlantsAsync(query);
+            _logger.LogInformation($"Searching plants: {query} (Page: {pageNumber}, Size: {pageSize})");
 
-            if (plants == null || plants.Count == 0)
-                plants = new List<PlantLookupDto>();
+            var pagedResponse = await _conditionService.SearchPlantsAsync(query, pageNumber, pageSize);
 
-            _logger.LogInformation($"Found {plants.Count} plants matching query: {query}");
-            return Ok(plants);
+            return Ok(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError($"Unexpected error searching plants: {ex.Message}");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { message = "An error occurred while searching plants" });
+            return StatusCode(500, new { message = "An error occurred while searching plants" });
         }
     }
 }

@@ -78,18 +78,43 @@ public class UserPlantServiceTests
     }
 
     [Fact]
-    public async Task GetUserPlantsAsync_ReturnsList()
+    public async Task GetUserPlantsAsync_ReturnsPagedResponse()
     {
         // Arrange
-        _dbContext.UserPlants.Add(new UserPlant { UserId = 1, Nickname = "P1", PlantType = "T", CurrentStatus = "S" });
-        _dbContext.UserPlants.Add(new UserPlant { UserId = 1, Nickname = "P2", PlantType = "T", CurrentStatus = "S" });
+        for(int i=0; i<15; i++)
+        {
+            _dbContext.UserPlants.Add(new UserPlant { UserId = 1, Nickname = $"P{i}", PlantType = "T", CurrentStatus = "S" });
+        }
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var results = await _service.GetUserPlantsAsync(1);
+        var result = await _service.GetUserPlantsAsync(1, 1, 10);
 
         // Assert
-        Assert.Equal(2, results.Count);
+        Assert.Equal(10, result.Data.Count());
+        Assert.Equal(15, result.TotalRecords);
+        Assert.Equal(2, result.TotalPages);
+        Assert.True(result.HasNextPage);
+        Assert.False(result.HasPreviousPage);
+    }
+
+    [Fact]
+    public async Task GetUserPlantsAsync_SecondPage_ReturnsRemaining()
+    {
+        // Arrange
+        for(int i=0; i<15; i++)
+        {
+            _dbContext.UserPlants.Add(new UserPlant { UserId = 1, Nickname = $"P{i}", PlantType = "T", CurrentStatus = "S" });
+        }
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetUserPlantsAsync(1, 2, 10);
+
+        // Assert
+        Assert.Equal(5, result.Data.Count());
+        Assert.False(result.HasNextPage);
+        Assert.True(result.HasPreviousPage);
     }
 
     [Fact]

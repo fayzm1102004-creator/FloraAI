@@ -16,9 +16,9 @@ public interface IUserPlantService
     Task<UserPlantResponseDto> SaveUserPlantAsync(int userId, SaveUserPlantDto dto);
 
     /// <summary>
-    /// Retrieves all plants saved by a specific user
+    /// Retrieves plants saved by a specific user with pagination
     /// </summary>
-    Task<List<UserPlantResponseDto>> GetUserPlantsAsync(int userId);
+    Task<FloraAI.API.DTOs.Common.PagedResponse<UserPlantResponseDto>> GetUserPlantsAsync(int userId, int pageNumber = 1, int pageSize = 10);
 
     /// <summary>
     /// Retrieves a specific plant by ID

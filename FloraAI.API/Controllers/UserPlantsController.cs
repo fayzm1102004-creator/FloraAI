@@ -76,41 +76,30 @@ public class UserPlantsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all plants in user's library.
+    /// Get plants in user's library with pagination.
     /// </summary>
-    /// <remarks>
-    /// Returns all UserPlant entries for the specified user with their saved data.
-    /// </remarks>
     [HttpGet("user/{userId}")]
-    [ProducesResponseType(typeof(IEnumerable<UserPlantResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetUserPlants(int userId)
+    [ProducesResponseType(typeof(FloraAI.API.DTOs.Common.PagedResponse<UserPlantResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUserPlants(int userId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         try
         {
             if (userId <= 0)
                 return BadRequest(new { message = "Valid UserId is required" });
 
-            _logger.LogInformation($"Retrieving plants for user {userId}");
+            if (pageNumber <= 0) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
 
-            var userPlants = await _userPlantService.GetUserPlantsAsync(userId);
+            _logger.LogInformation($"Retrieving plants for user {userId} (Page: {pageNumber}, Size: {pageSize})");
 
-            if (userPlants == null)
-            {
-                _logger.LogWarning($"User {userId} not found");
-                return NotFound(new { message = "User not found" });
-            }
+            var pagedResponse = await _userPlantService.GetUserPlantsAsync(userId, pageNumber, pageSize);
 
-            _logger.LogInformation($"Retrieved {userPlants.Count} plants for user {userId}");
-            return Ok(userPlants);
+            return Ok(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError($"Unexpected error retrieving user plants: {ex.Message}");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { message = "An error occurred while retrieving plants" });
+            return StatusCode(500, new { message = "An error occurred while retrieving plants" });
         }
     }
 

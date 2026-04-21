@@ -1,135 +1,111 @@
-# 🌿 FloraAI Flutter Integration Guide v1.0
+# 🌿 FloraAI Flutter Integration Guide v2.0 (Production-Ready)
 
-أهلاً بك في الدليل التقني لربط تطبيق **Flutter** مع **FloraAI Backend**. هذا الملف موجه لمطوري فلاتر لشرح كيفية استخدام نقاط الوصول (API Endpoints) بشكل احترافي.
-
----
-
-## 🌐 1. الروابط الأساسية (Base URL)
-
-| البيئة (Environment) | الرابط (URL) | الوصف |
-| :--- | :--- | :--- |
-| **Emulator** | `http://10.0.2.2:5098` | للتشغيل على محاكي الأندرويد |
-| **Real Device** | `http://[IPv4_Address]:5098` | للتشغيل على موبايل حقيقي (نفس الشبكة) |
-| **Production** | `https://api.floraai.com` | رابط السيرفر المباشر (عند الرفع) |
-
-> ⚠️ **ملاحظة أمنية:** جميع الروابط (ما عدا التسجيل والدخول) تتطلب إرسال الـ Token في الـ Header كـ:  
-> `Authorization: Bearer {Your_Token}`
+أهلاً بك في الدليل التقني المحدث لربط تطبيق **Flutter** مع **FloraAI Backend**. تم تحديث هذا الدليل ليعكس ميزة الأمان المتقدمة ونظام التحميل الجزئي (Pagination).
 
 ---
 
-## 🔐 2. قسم المصادقة (Authentication)
+## 🔐 1. نظام الأمان المتطور (Authentication & Refresh Token)
 
-### 🔹 إنشاء حساب جديد (Register)
-*   **Endpoint:** `/api/auth/register` | **Method:** `POST`
-*   **Headers:** `Content-Type: application/json`
-*   **Request Body:**
-```json
-{
-  "fullName": "Name",
-  "email": "user@example.com",
-  "password": "Password123"
-}
-```
-*   **Response (201 Created):** `{"id": 1, "fullName": "Name", "email": "user@example.com"}`
-
----
+بناءً على معايير الإنتاج، تم فصل الـ `Access Token` عن الـ `Refresh Token` لضمان أمان فائق.
 
 ### 🔹 تسجيل الدخول (Login)
 *   **Endpoint:** `/api/auth/login` | **Method:** `POST`
-*   **Request Body:** `{"email": "user@example.com", "password": "Password123"}`
-*   **Response (200 OK):** `{"id": 1, "token": "eyJhbG... (Bearer Token)"}`
-
-#### 💻 Dart Example (Login):
-```dart
-Future<String?> login(String email, String password) async {
-  final response = await http.post(
-    Uri.parse('$baseUrl/api/auth/login'),
-    body: jsonEncode({'email': email, 'password': password}),
-    headers: {'Content-Type': 'application/json'},
-  );
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body)['token'];
-  }
-  return null;
-}
-```
-
----
-
-## 🤖 3. قسم التشخيص الهجين (Diagnosis)
-
-### 🔹 فحص النبات (Hybrid Scan)
-هذا هو الرابط الأهم؛ حيث يستقبل تصنيف موديل الموبايل ويرد بالروشتة العلاجية.
-
-*   **Endpoint:** `/api/diagnosis/scan` | **Method:** `POST`
-*   **Headers:** `Authorization: Bearer {Token}`
-*   **Request Body:**
-```json
-{
-  "plantType": "Tomato",
-  "conditionName": "Unknown/User description",
-  "detectedCategory": "فطريات" 
-}
-```
 *   **Response (200 OK):**
 ```json
 {
-  "plantType": "Tomato",
-  "conditionName": "البياض الدقيقي",
-  "treatment": "استخدم مبيد فطري نحاسي...",
-  "careInstructions": "اعزل النبات...",
-  "lastUpdated": "2026-04-21T02:00:00Z"
+  "id": 1,
+  "fullName": "Name",
+  "email": "user@example.com",
+  "role": "User",
+  "token": "ACCESS_TOKEN (Expires in 60m)",
+  "refreshToken": "REFRESH_TOKEN (Expires in 7 days)"
 }
 ```
 
-💡 **Pro-Tip:** إذا فشل الـ Vision Model في الموبايل في تحديد الفئة، أرسل `detectedCategory` كـ `null`؛ وسيقوم النظام بالتحليل العشوائي من الصفر.
+### 🔹 آلية تجديد التوكن (Refresh Token Flow)
+عندما ينتهي الـ `Access Token` ويرد السيرفر بـ **401 Unauthorized**، لا تطلب من المستخدم تسجيل الدخول مرة أخرى. بدلاً من ذلك، استدعِ هذا الرابط بصمت في الخلفية:
 
----
-
-## 🌿 4. قسم إدارة نباتات المستخدم (User Plants)
-
-### 🔸 حفظ نبتة في المكتبة
-*   **Endpoint:** `/api/userplants/save` | **Method:** `POST`
-*   **Request Body:** `{"userId": 1, "nickname": "My Rose", "plantType": "Rose", "currentStatus": "Healthy", ...}`
-
-### 🔸 عرض كل نباتات المستخدم
-*   **Endpoint:** `/api/userplants/user/{userId}` | **Method:** `GET`
-*   **Response:** `List<UserPlantResponseDto>`
-
----
-
-## 🔄 5. المزامنة والسجل (Sync & History)
-
-### 🔹 رفع الفحوصات المعلقة (Push Offline)
-تُستخدم عند استعادة الإنترنت لإرسال ما تم فحصه Offline ليقوم السيرفر بجلبه من الذكاء الاصطناعي.
-*   **Endpoint:** `/api/sync/push` | **Method:** `POST`
-*   **Request Body:** 
+*   **Endpoint:** `/api/auth/refresh-token` | **Method:** `POST`
+*   **Request Body:**
 ```json
 {
-  "pendingScans": [
-    {
-      "plantType": "Tomato",
-      "conditionName": "البقع البنية"
-    }
+  "accessToken": "THE_EXPIRED_TOKEN",
+  "refreshToken": "THE_SAVED_REFRESH_TOKEN"
+}
+```
+*   **Response (200 OK):** ستحصل على `token` و `refreshToken` جديدين. قم بتحديثهما في التخزين المحلي فوراً.
+
+---
+
+## 📄 2. نظام التحميل الجزئي (Pagination & Infinite Scroll)
+
+لتوفير باقة الإنترنت وسرعة التطبيق، أصبحت الروابط التي تعيد قوائم كبيرة (Lists) تدعم نظام الصفحات `PagedResponse<T>`.
+
+### 🔹 عرض نباتات المستخدم
+*   **Endpoint:** `/api/userplants/user/{userId}?pageNumber=1&pageSize=10`
+*   **Method:** `GET`
+*   **Response Structure:**
+```json
+{
+  "data": [...],          // القائمة الفعلية للنباتات
+  "pageNumber": 1,
+  "pageSize": 10,
+  "totalRecords": 15,     // إجمالي العناصر في الداتا بيز
+  "totalPages": 2,        // إجمالي الصفحات
+  "hasNextPage": true,    // هل توجد صفحة تالية؟ استخدمها في الـ Infinite Scroll
+  "hasPreviousPage": false
+}
+```
+
+#### 💻 Dart Example (Infinite Scroll Logic):
+```dart
+Future<void> fetchNextPage() async {
+  if (pagedResponse?.hasNextPage ?? true) {
+    final nextPage = (pagedResponse?.pageNumber ?? 0) + 1;
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/userplants/user/$userId?pageNumber=$nextPage&pageSize=10'),
+      headers: {'Authorization': 'Bearer $token'}
+    );
+    // Parse JSON into PagedResponse and append data to your list
+  }
+}
+```
+
+---
+
+## 🤖 3. التشخيص والبحث (Diagnosis & Lookup)
+
+### 🔹 البحث عن النباتات (Plant Lookup)
+تمت إضافة Pagination لعملية البحث لتقليل حجم البيانات.
+*   **Endpoint:** `/api/plantlookup/search?query=Rose&pageNumber=1&pageSize=5` | **Method:** `GET`
+
+### 🔹 فحص النبات (Diagnosis Scan)
+*   **Endpoint:** `/api/diagnosis/scan` | **Method:** `POST`
+*   **Tip:** تم تسريع هذا الرابط باستخدام **Redis Caching**. الردود المتكررة لنفس المرض ستكون فورية.
+
+---
+
+## 👑 4. لوحة تحكم الأدمن (Admin Analytics)
+
+نهاية طرفية جديدة مخصصة للأدمن فقط لجلب إحصائيات التطبيق.
+*   **Endpoint:** `/api/admin/stats` | **Method:** `GET`
+*   **Authorization:** يتطلب مستخدم بـ `role: Admin`.
+*   **Response:**
+```json
+{
+  "totalScans": 250,
+  "totalUsers": 120,
+  "topPlants": [
+    { "plantName": "Tomato", "count": 45 },
+    { "plantName": "Rose", "count": 30 }
+  ],
+  "categoryDistribution": [
+    { "category": "Fungi", "count": 80 },
+    { "category": "Healthy", "count": 60 }
   ]
 }
 ```
-*   **Response (200 OK):** سيعيد مصفوفة `diagnosisResults` تحتوي على (العلاج + الرعاية) لكل نبتة تم رفعها.
-
-💡 **Pro-Tips (شاشة ملف النبتة):**
-1. **التعامل مع الحالة (Healthy vs Sick):**
-   - إذا كانت النبتة سليمة، حقل `SavedTreatment` قد يعود فارغاً أو يحتوي على عبارة "النبات سليم". يُنصح مبرمج الفلاتر بإخفاء قسم "الروشتة" برمجياً إذا كان الحقل فارغاً.
-   - حقل `SavedCareInstructions` يجب أن يُعرض دائماً لأنه يحتوي على (جدول الري، الإضاءة، التسميد) سواء كانت النبتة سليمة أو مريضة.
-2. **تخزين الـ Token:** قم بتخزين الـ JWT محلياً باستخدام `shared_preferences` أو `flutter_secure_storage`.
 
 ---
-
-## 👑 6. قسم الإدارة (Admin Operations)
-
-| الوظيفة | المسار (Endpoint) | الطريقة (Method) |
-| :--- | :--- | :--- |
-| **عرض كل المستخدمين** | `/api/admin/users` | `GET` |
-| **حذف مستخدم** | `/api/admin/users/{userId}` | `DELETE` |
-
----
-**إعداد مطور الباك إند: [اسمك] 💻✨**
+**Technical Note:** الـ API يدعم الـ Redis Caching في الخلفية لضمان سرعة استجابة فائقة (High Performance).  
+**إعداد مطور الباك إند: [Antigravity AI] 💻✨**
