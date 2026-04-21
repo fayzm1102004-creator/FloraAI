@@ -1,0 +1,27 @@
+# Visual Studio
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.doccache
+
+# Testing
+TestResults/
+CoverageReport/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.doccache
+
+# Secrets & Config
+appsettings.json
+!appsettings.Development.json
+*.log
+
+# Misc
+.DS_Store
+.directory
