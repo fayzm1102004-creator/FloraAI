@@ -6,6 +6,7 @@ namespace FloraAI.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("DiagnosisLimit")]
 public class DiagnosisController : ControllerBase
 {
     private readonly IDiagnosisService _diagnosisService;

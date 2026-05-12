@@ -20,20 +20,22 @@
 لقد قمنا بترقية النظام ليكون قادراً على تحمل ضغط الاستخدام الفعلي بمستويات عالمية:
 
 *   **⚡ أداء فائق بمساعدة Redis:** دمج نظام **Redis Distributed Caching** لتخزين نتائج الإحصائيات وتشخيصات الذكاء الاصطناعي، مما يقلل الضغط على قاعدة البيانات ويسرع الاستجابة بمعدل 10 أضعاف.
-*   **🔐 أمان متقدم (JWT Refresh Flow):** تطبيق نظام **Refresh Tokens** و **Role-Based Access Control (RBAC)**؛ لضمان عدم اضطرار المستخدم لتسجيل الدخول المتكرر، مع تأمين لوحة التحكم للمشرفين فقط.
+*   **🗣️ شخصية الذكاء الاصطناعي المتطورة (Persona AI):** ترقية النظام ليستخدم **Gemini 2.5 Flash** مع هندسة Prompts قوية ليتحدث كمساعد شخصي ودود ("دكتور فلورا").
+*   **🩺 تشخيص هيكلي ومنفصل:** فصل خطوات العلاج الدقيقة (`Treatment`) عن نصائح الرعاية والوقاية المستقبلية (`CareAdvice`) مع التأكد من خلو الردود من التنسيقات المعقدة لتلائم تطبيقات الموبايل.
+*   **🔐 أمان متقدم (JWT Refresh Flow):** تطبيق نظام **Refresh Tokens** و **Role-Based Access Control (RBAC)**؛ لضمان عدم اضطرار المستخدم لتسجيل الدخول المتكرر.
 *   **📄 التحميل الجزئي (Pagination):** اعتماد كلاس `PagedResponse<T>` عام لكافة القوائم، مما يسمح بعمل **Infinite Scroll** في تطبيق الموبايل بكفاءة واستهلاك أقل للبيانات.
 *   **📊 لوحة بيانات الأدمن (Real-time Stats):** توفير إحصائيات دقيقة وإجماليات للفحوصات والمستخدمين وتوزيع الأمراض لحظياً لمساعدة الإدارة في اتخاذ القرار.
-*   **🏗️ بنية مرنة (Scalable Architecture):** فصل كامل بين طبقة الخدمات والكنترولر، مع استخدام **Generic Wrappers** للردود لضمان توحيد شكل الـ API.
+*   **🌐 دعم السيرفرات المشتركة:** تعديل بنية المشروع وإعدادات Swagger للعمل بسلاسة على الاستضافات المشتركة (Shared Hosting مثل SmarterASP) باستخدام `OutOfProcess` وإظهار الـ API محلياً وعالمياً.
 
 ---
 
 ## 🏗️ التقنيات المستخدمة (The Stack)
 *   **Framework:** .NET 8 (ASP.NET Core)
-*   **Artificial Intelligence:** Google Gemini AI API
+*   **Artificial Intelligence:** Google Gemini 2.5 Flash API
 *   **Mapping:** AutoMapper 16.1.1 (لأتمتة تحويل البيانات بين الطبقات)
 *   **Database:** Entity Framework Core (SQL Server / SQLite)
 *   **Testing:** xUnit, Moq, FluentAssertions
-*   **Documentation:** Swagger UI 6.6.2 (أحدث إصدار أمني مستقر)
+*   **Documentation:** Swagger UI 6.6.2 (متاح للجميع لسهولة التوثيق والتجربة)
 
 ---
 

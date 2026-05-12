@@ -6,15 +6,18 @@ namespace FloraAI.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("AuthLimit")]
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<AuthController> _logger;
+    private readonly ITokenBlacklistService _tokenBlacklistService;
 
-    public AuthController(IUserService userService, ILogger<AuthController> logger)
+    public AuthController(IUserService userService, ILogger<AuthController> logger, ITokenBlacklistService tokenBlacklistService)
     {
         _userService = userService;
         _logger = logger;
+        _tokenBlacklistService = tokenBlacklistService;
     }
 
     /// <summary>
@@ -22,7 +25,7 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Register([FromBody] UserRegisterDto request)
+    public async Task<IActionResult> Register([FromBody] UserRegisterDto request, [FromServices] IWebHostEnvironment env)
     {
         try
         {
@@ -40,6 +43,15 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError($"Unexpected error during registration: {ex.Message}");
+            if (env.IsDevelopment())
+            {
+                return StatusCode(500, new 
+                { 
+                    message = ex.Message, 
+                    innerException = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace 
+                });
+            }
             return StatusCode(500, new { message = "حدث خطأ أثناء التسجيل" });
         }
     }
@@ -96,5 +108,29 @@ public class AuthController : ControllerBase
             _logger.LogError($"Error refreshing token: {ex.Message}");
             return Unauthorized(new { message = "طلب غير صالح" });
         }
+    }
+
+    /// <summary>
+    /// Logout and invalidate the current token.
+    /// </summary>
+    [HttpPost("logout")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout()
+    {
+        var jti = User.Claims.FirstOrDefault(c => c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var expClaim = User.Claims.FirstOrDefault(c => c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Exp)?.Value;
+
+        if (jti != null && expClaim != null && long.TryParse(expClaim, out var exp))
+        {
+            var expTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
+            var timeRemaining = expTime - DateTime.UtcNow;
+            if (timeRemaining > TimeSpan.Zero)
+            {
+                await _tokenBlacklistService.BlacklistTokenAsync(jti, timeRemaining);
+            }
+        }
+
+        return Ok(new { message = "تم تسجيل الخروج بنجاح" });
     }
 }

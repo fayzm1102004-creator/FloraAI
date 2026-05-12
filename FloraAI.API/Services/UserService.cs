@@ -150,15 +150,11 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// Hashes a password using SHA256
+    /// Hashes a password using BCrypt
     /// </summary>
     private string HashPassword(string password)
     {
-        using (var sha256 = SHA256.Create())
-        {
-            var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hash);
-        }
+        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
     }
 
     /// <summary>
@@ -166,7 +162,11 @@ public class UserService : IUserService
     /// </summary>
     private bool VerifyPassword(string password, string hash)
     {
-        var hashOfInput = HashPassword(password);
-        return hashOfInput.Equals(hash);
+        // Detect old SHA256 hashes and force password reset
+        if (!hash.StartsWith("$2"))
+        {
+            throw new InvalidOperationException("تم تحديث سياسة الأمان. يرجى إعادة تعيين كلمة المرور الخاصة بك.");
+        }
+        return BCrypt.Net.BCrypt.Verify(password, hash);
     }
 }

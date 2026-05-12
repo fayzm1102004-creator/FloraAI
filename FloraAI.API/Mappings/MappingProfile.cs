@@ -30,7 +30,10 @@ public class MappingProfile : Profile
         CreateMap<PlantLookup, PlantLookupDto>();
 
         // Diagnosis Mappings
-        CreateMap<ConditionsDictionary, FloraAI.API.DTOs.Diagnosis.DiagnosisScanResponseDto>();
+        CreateMap<ConditionsDictionary, FloraAI.API.DTOs.Diagnosis.DiagnosisScanResponseDto>()
+            .ForMember(dest => dest.ConditionId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.ScannedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.IsNewlyAdded, opt => opt.Ignore());
 
         // Sync Mappings
         CreateMap<ConditionsDictionary, SyncConditionDto>();

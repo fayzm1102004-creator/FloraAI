@@ -99,13 +99,38 @@ public class ConditionService : IConditionService
             {
                 try
                 {
-                    using var doc = JsonDocument.Parse(jsonResponse);
+                    // Clean up any markdown fencing or whitespace
+                    var cleanJson = jsonResponse.Trim();
+                    if (cleanJson.StartsWith("```"))
+                    {
+                        cleanJson = cleanJson.Replace("```json", "").Replace("```", "").Trim();
+                    }
+
+                    using var doc = JsonDocument.Parse(cleanJson);
                     var root = doc.RootElement;
-                    if (root.TryGetProperty("Treatment", out var tProp)) treatment = tProp.GetString() ?? treatment;
-                    if (root.TryGetProperty("Care", out var cProp)) careInstructions = cProp.GetString() ?? careInstructions;
+                    
+                    // Extract Treatment (العلاج) → treatment field
+                    if (root.TryGetProperty("Treatment", out var treatProp))
+                        treatment = treatProp.GetString() ?? treatment;
+                    else if (root.TryGetProperty("SpecificIssue", out var issueProp))
+                        treatment = issueProp.GetString() ?? treatment;
+
+                    // Extract CareAdvice (الرعاية) → careInstructions field
+                    if (root.TryGetProperty("CareAdvice", out var careProp))
+                        careInstructions = careProp.GetString() ?? careInstructions;
+                    else if (root.TryGetProperty("Care", out var careProp2))
+                        careInstructions = careProp2.GetString() ?? careInstructions;
                 }
-                catch { treatment = jsonResponse; }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse Gemini JSON response. Raw: {Response}", jsonResponse);
+                    treatment = jsonResponse;
+                }
             }
+
+            // Clean up any newlines to keep single flowing paragraphs
+            treatment = treatment.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            careInstructions = careInstructions.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
 
             var existing = await _dbContext.ConditionsDictionary
                 .FirstOrDefaultAsync(c => c.PlantType.ToLower() == plantType.ToLower() && c.ConditionName.ToLower() == conditionName.ToLower());
