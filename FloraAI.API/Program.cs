@@ -13,7 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 // ============================================================================
 var dbConn = builder.Configuration.GetConnectionString("DefaultConnection");
 var geminiKey = builder.Configuration["Gemini:ApiKey"];
-var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtKey = builder.Configuration["Jwt:Key"] ?? builder.Configuration["JWT_KEY"];
+
 
 if (string.IsNullOrWhiteSpace(dbConn) || dbConn == "REPLACE_VIA_ENV_VARIABLES")
     throw new InvalidOperationException("CRITICAL: Database connection string is missing or not configured.");
@@ -60,8 +61,9 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? builder.Configuration["JWT_KEY"] ?? "Fallback_Security_Key_For_Development_Only_Change_Immediately")),
         ClockSkew = TimeSpan.Zero
+
     };
     
     options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents

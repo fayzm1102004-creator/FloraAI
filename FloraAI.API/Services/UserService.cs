@@ -118,18 +118,26 @@ public class UserService : IUserService
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
 
+        var validityDaysStr = _config["Jwt:RefreshTokenValidityInDays"] ?? _config["JWT_REFRESH_TOKEN_VALIDITY_DAYS"] ?? "7";
+        if (!double.TryParse(validityDaysStr, out var validityDays)) validityDays = 7;
+        
         user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(double.Parse(_config["Jwt:RefreshTokenValidityInDays"]!));
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(validityDays);
+
 
         await _dbContext.SaveChangesAsync();
+
+        var validityMinsStr = _config["Jwt:TokenValidityInMinutes"] ?? _config["JWT_TOKEN_VALIDITY_MINUTES"] ?? "60";
+        if (!double.TryParse(validityMinsStr, out var validityMins)) validityMins = 60;
 
         return new AuthResponseDto
         {
             Token = accessToken,
             RefreshToken = refreshToken,
-            Expiration = DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:TokenValidityInMinutes"]!)),
+            Expiration = DateTime.UtcNow.AddMinutes(validityMins),
             User = _mapper.Map<UserResponseDto>(user)
         };
+
     }
 
     /// <summary>
@@ -154,8 +162,10 @@ public class UserService : IUserService
     /// </summary>
     private string HashPassword(string password)
     {
-        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+        var pepper = _config["Jwt:Pepper"] ?? _config["JWT_PEPPER"] ?? "";
+        return BCrypt.Net.BCrypt.HashPassword(password + pepper, workFactor: 12);
     }
+
 
     /// <summary>
     /// Verifies a password against its hash
@@ -167,6 +177,9 @@ public class UserService : IUserService
         {
             throw new InvalidOperationException("تم تحديث سياسة الأمان. يرجى إعادة تعيين كلمة المرور الخاصة بك.");
         }
-        return BCrypt.Net.BCrypt.Verify(password, hash);
+        
+        var pepper = _config["Jwt:Pepper"] ?? _config["JWT_PEPPER"] ?? "";
+        return BCrypt.Net.BCrypt.Verify(password + pepper, hash);
     }
+
 }

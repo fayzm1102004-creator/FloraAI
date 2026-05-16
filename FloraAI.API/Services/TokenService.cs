@@ -27,18 +27,23 @@ public class TokenService : ITokenService
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var keyStr = _config["Jwt:Key"] ?? _config["JWT_KEY"] ?? "Fallback_Security_Key_For_Development_Only_Change_Immediately";
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        var validityMinsStr = _config["Jwt:TokenValidityInMinutes"] ?? _config["JWT_TOKEN_VALIDITY_MINUTES"] ?? "60";
+        if (!double.TryParse(validityMinsStr, out var validityMins)) validityMins = 60;
+
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
+            issuer: _config["Jwt:Issuer"] ?? "FloraAI_Backend",
+            audience: _config["Jwt:Audience"] ?? "FloraAI_Mobile_App",
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:TokenValidityInMinutes"]!)),
+            expires: DateTime.UtcNow.AddMinutes(validityMins),
             signingCredentials: creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+
     }
 
     public string GenerateRefreshToken()
@@ -51,14 +56,16 @@ public class TokenService : ITokenService
 
     public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {
+        var keyStr = _config["Jwt:Key"] ?? _config["JWT_KEY"] ?? "Fallback_Security_Key_For_Development_Only_Change_Immediately";
         var tokenValidationParameters = new TokenValidationParameters
         {
             ValidateAudience = false,
             ValidateIssuer = false,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr)),
             ValidateLifetime = false // Here we are saying that we don't care about the token's expiration date
         };
+
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
