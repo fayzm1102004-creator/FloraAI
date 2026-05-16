@@ -26,17 +26,8 @@ if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == "REPLACE_VIA_ENV_VARIABLES")
 // 1. DATABASE CONFIGURATION - ApplicationDbContext with SQL Server
 // ============================================================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions => sqlOptions
-            .MigrationsAssembly("FloraAI.API")
-            .EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null
-            )
-    )
-);
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    npgsqlOptions => npgsqlOptions.MigrationsAssembly("FloraAI.API")));
 
 // ============================================================================
 // 2. DEPENDENCY INJECTION - Service Registration
@@ -311,8 +302,8 @@ using (var scope = app.Services.CreateScope())
         // On shared hosting, apply migrations safely. If no migrations exist, EnsureCreated acts as fallback.
         try
         {
-            dbContext.Database.Migrate();
-            Console.WriteLine("✓ تم تطبيق تحديثات قاعدة البيانات (Migrations) بنجاح");
+            await dbContext.Database.MigrateAsync();
+            Console.WriteLine("✓ تم تطبيق تحديثات قاعدة البيانات (Postgres Migrations) بنجاح");
         }
         catch (InvalidOperationException)
         {
