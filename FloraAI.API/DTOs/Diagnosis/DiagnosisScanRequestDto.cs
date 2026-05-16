@@ -10,4 +10,5 @@ public class DiagnosisScanRequestDto
     /// Optional: If provided, the backend will automatically update this specific plant's medical record with the new diagnosis
     /// </summary>
     public int? UserPlantId { get; set; }
+    public string? ImageUrl { get; set; }
 }

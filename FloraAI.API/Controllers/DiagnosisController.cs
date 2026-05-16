@@ -1,6 +1,10 @@
 using FloraAI.API.DTOs.Diagnosis;
 using FloraAI.API.Services.Interfaces;
+using FloraAI.API.Models.Entities;
+using FloraAI.API.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace FloraAI.API.Controllers;
 
@@ -12,6 +16,7 @@ public class DiagnosisController : ControllerBase
     private readonly IDiagnosisService _diagnosisService;
     private readonly IConditionService _conditionService;
     private readonly IUserPlantService _userPlantService;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<DiagnosisController> _logger;
     private readonly AutoMapper.IMapper _mapper;
 
@@ -19,12 +24,14 @@ public class DiagnosisController : ControllerBase
         IDiagnosisService diagnosisService,
         IConditionService conditionService,
         IUserPlantService userPlantService,
+        ApplicationDbContext dbContext,
         ILogger<DiagnosisController> logger,
         AutoMapper.IMapper mapper)
     {
         _diagnosisService = diagnosisService;
         _conditionService = conditionService;
         _userPlantService = userPlantService;
+        _dbContext = dbContext;
         _logger = logger;
         _mapper = mapper;
     }
@@ -71,17 +78,15 @@ public class DiagnosisController : ControllerBase
 
             var response = _mapper.Map<DiagnosisScanResponseDto>(condition);
 
-            // Only save history if it's a real stored condition (not a fallback Id=0)
-            if (condition.Id != 0)
+            // Only save history if it's a real stored condition (not a fallback Id=0) AND we have a UserPlantId
+            if (condition.Id != 0 && request.UserPlantId.HasValue && request.UserPlantId.Value > 0)
             {
                 var scanHistory = new ScanHistory
                 {
-                    UserId = userId,
-                    UserPlantId = request.UserPlantId > 0 ? request.UserPlantId : null,
-                    ConditionId = condition.Id,
-                    DetectedCategory = request.DetectedCategory,
-                    ImageUrl = request.ImageUrl,
-                    ScannedAt = DateTime.UtcNow
+                    UserPlantId = request.UserPlantId.Value,
+                    ConditionsDictionaryId = condition.Id,
+                    ConditionFound = condition.ConditionName,
+                    ScanDate = DateTime.UtcNow
                 };
 
                 _dbContext.ScanHistories.Add(scanHistory);
