@@ -1,6 +1,8 @@
 using FloraAI.API.DTOs.User;
 using FloraAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace FloraAI.API.Controllers;
 
@@ -23,7 +25,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Register a new user account.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("register")]
+
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Register([FromBody] UserRegisterDto request, [FromServices] IWebHostEnvironment env)
     {
@@ -59,7 +63,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Login with email and password.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("login")]
+
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login([FromBody] UserLoginDto request)
     {
@@ -87,7 +93,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Refresh the access token using a refresh token.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("refresh-token")]
+
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDto request)
@@ -114,7 +122,8 @@ public class AuthController : ControllerBase
     /// Logout and invalidate the current token.
     /// </summary>
     [HttpPost("logout")]
-    [Microsoft.AspNetCore.Authorization.Authorize]
+    [Authorize]
+
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {
