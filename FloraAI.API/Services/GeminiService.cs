@@ -138,10 +138,10 @@ public class GeminiService : IGeminiService
         1. MainCategory must be exactly one of: ["فطريات", "بكتيريا", "فيروسات", "حشرات", "سليم"].
         2. Treatment (العلاج): 
            - **STRICTLY PROHIBIT** commercial brand names.
-           - **Narrative Style:** Write the treatment as a professional, simplified story of recovery. Describe the condition and the path to cure like an expert guiding a friend through a journey, making it feel supportive and technical yet accessible.
+           - **Narrative Style:** Write the treatment as a professional, simplified story of recovery.
            - **Terminology:** You MUST use the phrase "المادة الفعالة" when describing the active ingredient. **STRICTLY BAN** the phrase "المكون النشط".
-           - **Directness:** DO NOT use long conversational intros like "يا صديقي لا تقلق" or "أهلاً بك". Start directly with the narrative of the plant's condition and the expert cure steps.
-           - **Actionable:** Even if no chemical cure exists, describe mechanical steps (pruning, isolation) as part of the recovery story.
+           - **Directness:** DO NOT use long conversational intros like "يا صديقي لا تقلق".
+           - **MANDATORY PATTERN:** You MUST follow this exact narrative structure: "اسم المرض والوعكة: [شرح مبسط وقصصي لرحلة العلاج والخطوات العملية]. (المادة الفعالة المستهدفة: [اسم المادة الفعالة أو الخطوة الميكانيكية])."
            - Format: Single flowing paragraph.
         3. CareAdvice (الرعاية): Provide specific prevention steps to stop THIS EXACT disease from returning.
            - This MUST be a JSON object with exactly 5 keys: "Watering", "Light", "Fertilizing", "Soil", "Humidity".

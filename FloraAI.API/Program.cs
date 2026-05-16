@@ -303,7 +303,11 @@ using (var scope = app.Services.CreateScope())
         try
         {
             await dbContext.Database.MigrateAsync();
-            Console.WriteLine("✓ تم تطبيق تحديثات قاعدة البيانات (Postgres Migrations) بنجاح");
+            
+            // Temporary: Truncate tables to clear old format data on next startup
+            await dbContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE \"ScanHistories\", \"ConditionsDictionary\" RESTART IDENTITY CASCADE;");
+            
+            Console.WriteLine("✓ تم تطبيق التحديثات وتطهير قاعدة البيانات (Postgres) بنجاح");
         }
         catch (InvalidOperationException)
         {
