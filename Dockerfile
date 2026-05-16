@@ -1,11 +1,11 @@
-# Base image for running the app (NET 8)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+# Base image for running the app (NET 10)
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Image for building the app (NET 8 SDK)
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Image for building the app (NET 10 SDK)
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["FloraAI.API/FloraAI.API.csproj", "FloraAI.API/"]
 RUN dotnet restore "FloraAI.API/FloraAI.API.csproj"
