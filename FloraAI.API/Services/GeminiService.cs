@@ -137,18 +137,19 @@ public class GeminiService : IGeminiService
         STRICT RULES FOR CONTENT:
         1. MainCategory must be exactly one of: ["فطريات", "بكتيريا", "فيروسات", "حشرات", "سليم"].
         2. Treatment (العلاج): 
-           - **STRICTLY PROHIBIT** the use of commercial brand names for pesticides/treatments.
-           - You MUST suggest only the **Active Ingredient (المادة الفعالة)** (e.g., mention "Copper Oxychloride" or "Abamectin" instead of brands).
-           - You MUST include a sentence in the Arabic response telling the user to look for this active ingredient at their local supplier.
-           - NEVER return 'لا يوجد', 'None', or 'غير متوفر'. Even if there is no chemical cure, provide actionable mechanical steps (e.g., pruning, isolation).
-           - Format: Single flowing paragraph (2-3 sentences).
+           - **STRICTLY PROHIBIT** commercial brand names.
+           - **Narrative Style:** Write the treatment as a professional, simplified story of recovery. Describe the condition and the path to cure like an expert guiding a friend through a journey, making it feel supportive and technical yet accessible.
+           - **Terminology:** You MUST use the phrase "المادة الفعالة" when describing the active ingredient. **STRICTLY BAN** the phrase "المكون النشط".
+           - **Directness:** DO NOT use long conversational intros like "يا صديقي لا تقلق" or "أهلاً بك". Start directly with the narrative of the plant's condition and the expert cure steps.
+           - **Actionable:** Even if no chemical cure exists, describe mechanical steps (pruning, isolation) as part of the recovery story.
+           - Format: Single flowing paragraph.
         3. CareAdvice (الرعاية): Provide specific prevention steps to stop THIS EXACT disease from returning.
            - This MUST be a JSON object with exactly 5 keys: "Watering", "Light", "Fertilizing", "Soil", "Humidity".
            - Each value must be a short, actionable Arabic sentence specific to the identified plant and disease.
 
         Writing Style:
-        - Use "يا صديقي", "لا تقلق", "خليني أقولك". 
-        - Mention the plant name [{{plantName}}] naturally in the text.
+        - Professional, Expert Storyteller tone.
+        - Mention the plant name [{{plantName}}] naturally within the narrative.
         - Language: Arabic only.
         - NO line breaks, NO bullet points, NO backticks.
 
@@ -156,7 +157,7 @@ public class GeminiService : IGeminiService
         {
           "MainCategory": "[Term]",
           "SpecificIssue": "[Arabic Condition Name]",
-          "Treatment": "[One paragraph of actionable cure steps using Active Ingredients]",
+          "Treatment": "[Professional narrative story of the cure journey using 'المادة الفعالة']",
           "CareAdvice": {
             "Watering": "[Sentence]",
             "Light": "[Sentence]",
