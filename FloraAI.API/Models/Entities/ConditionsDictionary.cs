@@ -10,7 +10,11 @@ public class ConditionsDictionary
     public string PlantType { get; set; } = string.Empty;
     public string ConditionName { get; set; } = string.Empty;
     public string? Treatment { get; set; }
-    public string? CareInstructions { get; set; }
+    public string? WateringAdvice { get; set; }
+    public string? LightAdvice { get; set; }
+    public string? FertilizingAdvice { get; set; }
+    public string? SoilAdvice { get; set; }
+    public string? HumidityAdvice { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 
     // Navigation Properties

@@ -38,7 +38,11 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.PlantType).IsRequired().HasMaxLength(500);
             entity.Property(e => e.ConditionName).IsRequired().HasMaxLength(500);
             entity.Property(e => e.Treatment).HasMaxLength(4000);
-            entity.Property(e => e.CareInstructions).HasMaxLength(4000);
+            entity.Property(e => e.WateringAdvice).HasMaxLength(4000);
+            entity.Property(e => e.LightAdvice).HasMaxLength(4000);
+            entity.Property(e => e.FertilizingAdvice).HasMaxLength(4000);
+            entity.Property(e => e.SoilAdvice).HasMaxLength(4000);
+            entity.Property(e => e.HumidityAdvice).HasMaxLength(4000);
             entity.HasIndex(e => new { e.PlantType, e.ConditionName }).IsUnique();
         });
 
@@ -50,7 +54,11 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.PlantType).IsRequired().HasMaxLength(500);
             entity.Property(e => e.CurrentStatus).IsRequired().HasMaxLength(500);
             entity.Property(e => e.SavedTreatment).HasMaxLength(4000);
-            entity.Property(e => e.SavedCareInstructions).HasMaxLength(4000);
+            entity.Property(e => e.SavedWateringAdvice).HasMaxLength(4000);
+            entity.Property(e => e.SavedLightAdvice).HasMaxLength(4000);
+            entity.Property(e => e.SavedFertilizingAdvice).HasMaxLength(4000);
+            entity.Property(e => e.SavedSoilAdvice).HasMaxLength(4000);
+            entity.Property(e => e.SavedHumidityAdvice).HasMaxLength(4000);
 
             // Foreign Key
             entity.HasOne(e => e.User)

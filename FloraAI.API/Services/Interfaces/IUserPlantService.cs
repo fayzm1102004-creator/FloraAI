@@ -31,6 +31,11 @@ public interface IUserPlantService
     Task<UserPlantResponseDto> UpdatePlantStatusAsync(int plantId, string status);
 
     /// <summary>
+    /// Updates the diagnosis/treatment record for a plant profile
+    /// </summary>
+    Task<UserPlantResponseDto?> UpdatePlantDiagnosisAsync(UpdatePlantDiagnosisDto dto);
+
+    /// <summary>
     /// Deletes a plant from user's library
     /// </summary>
     Task<bool> DeleteUserPlantAsync(int plantId);

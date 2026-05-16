@@ -101,7 +101,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 // HTTP Client for external API calls (Gemini) using TypedClient pattern with Polly Resilience
 builder.Services.AddHttpClient<GeminiService>()
-    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10))
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(30))
     .AddPolicyHandler(HttpPolicyExtensions
         .HandleTransientHttpError() // 5xx or 408
         .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
@@ -343,7 +343,11 @@ using (var scope = app.Services.CreateScope())
                     PlantType = "الورد",
                     ConditionName = "البياض الدقيقي",
                     Treatment = "رش مسحوق الكبريت أو زيت النيم. تأكد من تدوير الهواء الجيد. أزل الأوراق المصابة.",
-                    CareInstructions = "1. سقاية من القاعدة فقط وليس على الأوراق\n2. توفير 6+ ساعات من أشعة الشمس\n3. تقليم الفروع الميتة\n4. تطبيق المبيدات الفطرية أسبوعياً إذا لزم الأمر\n5. تجنب الازدحام",
+                    WateringAdvice = "سقاية من القاعدة فقط وليس على الأوراق.",
+                    LightAdvice = "توفير 6+ ساعات من أشعة الشمس.",
+                    FertilizingAdvice = "تقليم الفروع الميتة والتسميد الدوري.",
+                    SoilAdvice = "تجنب الازدحام لضمان تهوية التربة.",
+                    HumidityAdvice = "تطبيق المبيدات الفطرية أسبوعياً إذا لزم الأمر.",
                     LastUpdated = DateTime.UtcNow
                 },
                 new()
@@ -351,7 +355,11 @@ using (var scope = app.Services.CreateScope())
                     PlantType = "الطماطم",
                     ConditionName = "اللفحة المبكرة",
                     Treatment = "أزل الأوراق المصابة على الفور. ضع مبيد الفطريات النحاسي. حسّن تدوير الهواء.",
-                    CareInstructions = "1. سقاية من القاعدة فقط\n2. إزالة الأوراق السفلية\n3. تطبيق المبيدات الفطرية كل 7-10 أيام\n4. تغطية التربة\n5. حصاد الثمار الناضجة بسرعة",
+                    WateringAdvice = "سقاية من القاعدة فقط.",
+                    LightAdvice = "توفير إضاءة شمسية قوية.",
+                    FertilizingAdvice = "تطبيق المبيدات الفطرية كل 7-10 أيام.",
+                    SoilAdvice = "تغطية التربة لحماية الجذور.",
+                    HumidityAdvice = "حصاد الثمار الناضجة بسرعة.",
                     LastUpdated = DateTime.UtcNow
                 },
                 new()
@@ -359,7 +367,11 @@ using (var scope = app.Services.CreateScope())
                     PlantType = "التفاح",
                     ConditionName = "الجرب",
                     Treatment = "قص الفروع المصابة. ضع مبيد الكبريت أو النحاس الفطري. أزل الأوراق الساقطة.",
-                    CareInstructions = "1. تقليل عناقيد الثمار\n2. تطبيق المبيدات الفطرية في الربيع\n3. إزالة الثمار المصابة\n4. التقليم لتدوير الهواء\n5. تنظيف الحطام المتساقط",
+                    WateringAdvice = "تنظيف الحطام المتساقط حول الشجرة.",
+                    LightAdvice = "تأكد من وصول الشمس لقلب الشجرة.",
+                    FertilizingAdvice = "تطبيق المبيدات الفطرية في الربيع.",
+                    SoilAdvice = "التقليم الجيد لتدوير الهواء.",
+                    HumidityAdvice = "إزالة الثمار المصابة فوراً.",
                     LastUpdated = DateTime.UtcNow
                 },
                 new()
@@ -367,7 +379,11 @@ using (var scope = app.Services.CreateScope())
                     PlantType = "الريحان",
                     ConditionName = "بقعة الأوراق",
                     Treatment = "أزل الأوراق المصابة على الفور. تجنب السقاية من الأعلى. ضع زيت النيم إذا كان الوضع حاداً.",
-                    CareInstructions = "1. سقاية على مستوى التربة\n2. تأكد من تدفق الهواء الجيد\n3. إزالة الأوراق التالفة\n4. قرص براعم الأزهار\n5. حصاد بانتظام",
+                    WateringAdvice = "سقاية على مستوى التربة.",
+                    LightAdvice = "تأكد من تدفق الهواء والضوء الجيد.",
+                    FertilizingAdvice = "قرص براعم الأزهار لتقوية النبتة.",
+                    SoilAdvice = "تجنب تراكم المياه الراكدة.",
+                    HumidityAdvice = "حصاد الأوراق بانتظام.",
                     LastUpdated = DateTime.UtcNow
                 },
                 new()
@@ -375,7 +391,11 @@ using (var scope = app.Services.CreateScope())
                     PlantType = "الخيار",
                     ConditionName = "البياض الدقيقي",
                     Treatment = "رش الكبريت أو كربونات البوتاسيوم. حسّن تدوير الهواء. أزل الأوراق المصابة.",
-                    CareInstructions = "1. سقاية في الصباح الباكر\n2. توفير دعم الشبكة\n3. إزالة الأوراق القديمة\n4. تطبيق رش وقائي\n5. حصاد متكرر",
+                    WateringAdvice = "سقاية في الصباح الباكر.",
+                    LightAdvice = "توفير دعم الشبكة لرفع الأوراق عن الأرض.",
+                    FertilizingAdvice = "تطبيق رش وقائي دوري.",
+                    SoilAdvice = "تحسين صرف التربة.",
+                    HumidityAdvice = "حصاد متكرر لمنع الإجهاد.",
                     LastUpdated = DateTime.UtcNow
                 }
             };

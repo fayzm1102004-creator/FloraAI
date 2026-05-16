@@ -7,5 +7,5 @@ public class SaveUserPlantDto
     public required string PlantType { get; set; }
     public required string CurrentStatus { get; set; }
     public string? SavedTreatment { get; set; }
-    public required string SavedCareInstructions { get; set; }
+    public FloraAI.API.DTOs.Diagnosis.CareAdviceDto CareAdvice { get; set; } = new();
 }

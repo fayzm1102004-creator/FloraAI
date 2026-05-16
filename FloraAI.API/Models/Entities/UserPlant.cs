@@ -12,7 +12,11 @@ public class UserPlant
     public string PlantType { get; set; } = string.Empty;
     public string CurrentStatus { get; set; } = string.Empty;
     public string? SavedTreatment { get; set; }
-    public string? SavedCareInstructions { get; set; }
+    public string? SavedWateringAdvice { get; set; }
+    public string? SavedLightAdvice { get; set; }
+    public string? SavedFertilizingAdvice { get; set; }
+    public string? SavedSoilAdvice { get; set; }
+    public string? SavedHumidityAdvice { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Foreign Keys

@@ -28,3 +28,11 @@ appsettings.json
 
 # Publish Output
 publish_output/
+publish_ready/
+Publish/
+*.zip
+
+# Temporary/Analysis folders
+DIAGRAMS/
+documewn/
+test_regex.cs

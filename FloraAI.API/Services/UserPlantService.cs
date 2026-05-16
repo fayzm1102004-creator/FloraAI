@@ -44,7 +44,11 @@ public class UserPlantService : IUserPlantService
                 PlantType = dto.PlantType,
                 CurrentStatus = dto.CurrentStatus,
                 SavedTreatment = dto.SavedTreatment,
-                SavedCareInstructions = dto.SavedCareInstructions,
+                SavedWateringAdvice = dto.CareAdvice.Watering,
+                SavedLightAdvice = dto.CareAdvice.Light,
+                SavedFertilizingAdvice = dto.CareAdvice.Fertilizing,
+                SavedSoilAdvice = dto.CareAdvice.Soil,
+                SavedHumidityAdvice = dto.CareAdvice.Humidity,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -131,6 +135,41 @@ public class UserPlantService : IUserPlantService
         catch (Exception ex)
         {
             _logger.LogError($"Error updating user plant status: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task<UserPlantResponseDto?> UpdatePlantDiagnosisAsync(UpdatePlantDiagnosisDto dto)
+    {
+        try
+        {
+            var userPlant = await _dbContext.UserPlants
+                .Include(up => up.ScanHistories)
+                .FirstOrDefaultAsync(up => up.Id == dto.PlantId);
+
+            if (userPlant == null)
+            {
+                _logger.LogWarning($"UserPlant with ID {dto.PlantId} not found for diagnosis update");
+                return null;
+            }
+
+            userPlant.SavedTreatment = dto.Treatment;
+            userPlant.SavedWateringAdvice = dto.CareAdvice.Watering;
+            userPlant.SavedLightAdvice = dto.CareAdvice.Light;
+            userPlant.SavedFertilizingAdvice = dto.CareAdvice.Fertilizing;
+            userPlant.SavedSoilAdvice = dto.CareAdvice.Soil;
+            userPlant.SavedHumidityAdvice = dto.CareAdvice.Humidity;
+
+            _dbContext.UserPlants.Update(userPlant);
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation($"Diagnosis record updated for UserPlant {dto.PlantId}");
+
+            return _mapper.Map<UserPlantResponseDto>(userPlant);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating user plant diagnosis: {ex.Message}");
             throw;
         }
     }

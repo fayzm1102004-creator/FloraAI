@@ -55,7 +55,7 @@ public class UserPlantsController : ControllerBase
                     PlantType = request.PlantType,
                     CurrentStatus = request.CurrentStatus ?? "Healthy",
                     SavedTreatment = request.SavedTreatment,
-                    SavedCareInstructions = request.SavedCareInstructions
+                    CareAdvice = request.CareAdvice
                 });
 
             if (userPlant == null)
@@ -139,7 +139,11 @@ public class UserPlantsController : ControllerBase
                 PlantType = userPlant.PlantType,
                 CurrentStatus = userPlant.CurrentStatus,
                 SavedTreatment = userPlant.SavedTreatment,
-                SavedCareInstructions = userPlant.SavedCareInstructions,
+                SavedWateringAdvice = userPlant.SavedWateringAdvice,
+                SavedLightAdvice = userPlant.SavedLightAdvice,
+                SavedFertilizingAdvice = userPlant.SavedFertilizingAdvice,
+                SavedSoilAdvice = userPlant.SavedSoilAdvice,
+                SavedHumidityAdvice = userPlant.SavedHumidityAdvice,
                 CreatedAt = userPlant.CreatedAt
             };
 
@@ -193,7 +197,11 @@ public class UserPlantsController : ControllerBase
                 PlantType = updated.PlantType,
                 CurrentStatus = updated.CurrentStatus,
                 SavedTreatment = updated.SavedTreatment,
-                SavedCareInstructions = updated.SavedCareInstructions,
+                SavedWateringAdvice = updated.SavedWateringAdvice,
+                SavedLightAdvice = updated.SavedLightAdvice,
+                SavedFertilizingAdvice = updated.SavedFertilizingAdvice,
+                SavedSoilAdvice = updated.SavedSoilAdvice,
+                SavedHumidityAdvice = updated.SavedHumidityAdvice,
                 CreatedAt = updated.CreatedAt
             };
 
@@ -205,6 +213,48 @@ public class UserPlantsController : ControllerBase
             _logger.LogError($"Unexpected error updating plant status: {ex.Message}");
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new { message = "An error occurred while updating plant status" });
+        }
+    }
+
+    /// <summary>
+    /// Update plant diagnosis (Historical Health Record).
+    /// </summary>
+    /// <remarks>
+    /// Updates the SavedTreatment and SavedCareInstructions fields for a specific plant.
+    /// </remarks>
+    [HttpPut("update-diagnosis")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> UpdatePlantDiagnosis([FromBody] UpdatePlantDiagnosisDto request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (request.PlantId <= 0)
+                return BadRequest(new { message = "Valid PlantId is required" });
+
+            _logger.LogInformation($"Updating diagnosis record for plant {request.PlantId}");
+
+            var updated = await _userPlantService.UpdatePlantDiagnosisAsync(request);
+
+            if (updated == null)
+            {
+                _logger.LogWarning($"Plant {request.PlantId} not found");
+                return NotFound(new { message = "Plant not found" });
+            }
+
+            _logger.LogInformation($"Plant {request.PlantId} diagnosis updated successfully");
+            return Ok(new { success = true, message = "تم تحديث السجل الطبي للنبتة بنجاح" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Unexpected error updating plant diagnosis: {ex.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "An error occurred while updating the plant diagnosis" });
         }
     }
 }

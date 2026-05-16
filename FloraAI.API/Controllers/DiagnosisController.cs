@@ -11,17 +11,20 @@ public class DiagnosisController : ControllerBase
 {
     private readonly IDiagnosisService _diagnosisService;
     private readonly IConditionService _conditionService;
+    private readonly IUserPlantService _userPlantService;
     private readonly ILogger<DiagnosisController> _logger;
     private readonly AutoMapper.IMapper _mapper;
 
     public DiagnosisController(
         IDiagnosisService diagnosisService,
         IConditionService conditionService,
+        IUserPlantService userPlantService,
         ILogger<DiagnosisController> logger,
         AutoMapper.IMapper mapper)
     {
         _diagnosisService = diagnosisService;
         _conditionService = conditionService;
+        _userPlantService = userPlantService;
         _logger = logger;
         _mapper = mapper;
     }
@@ -67,9 +70,36 @@ public class DiagnosisController : ControllerBase
             }
 
             var response = _mapper.Map<DiagnosisScanResponseDto>(condition);
-            if (string.IsNullOrWhiteSpace(response.CareInstructions))
+
+            // Only save history if it's a real stored condition (not a fallback Id=0)
+            if (condition.Id != 0)
             {
-                 response.CareInstructions = "لا توجد تعليمات رعاية متاحة";
+                var scanHistory = new ScanHistory
+                {
+                    UserId = userId,
+                    UserPlantId = request.UserPlantId > 0 ? request.UserPlantId : null,
+                    ConditionId = condition.Id,
+                    DetectedCategory = request.DetectedCategory,
+                    ImageUrl = request.ImageUrl,
+                    ScannedAt = DateTime.UtcNow
+                };
+
+                _dbContext.ScanHistories.Add(scanHistory);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Auto-update UserPlant if UserPlantId was provided
+            if (request.UserPlantId.HasValue && request.UserPlantId.Value > 0)
+            {
+                var updateDto = new FloraAI.API.DTOs.UserPlant.UpdatePlantDiagnosisDto
+                {
+                    PlantId = request.UserPlantId.Value,
+                    Treatment = response.Treatment ?? "غير متوفر",
+                    CareAdvice = response.CareAdvice
+                };
+                
+                await _userPlantService.UpdatePlantDiagnosisAsync(updateDto);
+                _logger.LogInformation($"Auto-updated diagnosis for UserPlant {request.UserPlantId.Value}");
             }
 
             _logger.LogInformation($"Diagnosis completed successfully for {request.PlantType}/{request.ConditionName}");

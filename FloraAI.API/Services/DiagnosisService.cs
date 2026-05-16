@@ -38,10 +38,19 @@ public class DiagnosisService : IDiagnosisService
 
         return new DiagnosisScanResponseDto
         {
+            ConditionId = condition.Id,
             PlantType = condition.PlantType,
             ConditionName = condition.ConditionName,
             Treatment = condition.Treatment ?? "لا توجد معالجة متاحة",
-            CareInstructions = condition.CareInstructions ?? "لا توجد تعليمات رعاية متاحة",
+            CareAdvice = new CareAdviceDto
+            {
+                Watering = condition.WateringAdvice ?? "غير متوفر",
+                Light = condition.LightAdvice ?? "غير متوفر",
+                Fertilizing = condition.FertilizingAdvice ?? "غير متوفر",
+                Soil = condition.SoilAdvice ?? "غير متوفر",
+                Humidity = condition.HumidityAdvice ?? "غير متوفر"
+            },
+            LastUpdated = condition.LastUpdated,
             ScannedAt = DateTime.UtcNow,
         };
     }

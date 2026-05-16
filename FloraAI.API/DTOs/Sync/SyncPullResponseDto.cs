@@ -12,6 +12,10 @@ public class SyncConditionDto
     public required string PlantType { get; set; }
     public required string ConditionName { get; set; }
     public string? Treatment { get; set; }
-    public required string CareInstructions { get; set; }
+    public string? WateringAdvice { get; set; }
+    public string? LightAdvice { get; set; }
+    public string? FertilizingAdvice { get; set; }
+    public string? SoilAdvice { get; set; }
+    public string? HumidityAdvice { get; set; }
     public DateTime LastUpdated { get; set; }
 }

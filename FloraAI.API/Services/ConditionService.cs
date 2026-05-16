@@ -35,8 +35,9 @@ public class ConditionService : IConditionService
     {
         var cacheKey = $"condition_{plantType.ToLower().Replace(" ", "_")}_{conditionName.ToLower().Replace(" ", "_")}";
         
-        var cachedData = await TryGetCacheAsync<ConditionsDictionary>(cacheKey);
-        if (cachedData != null) return cachedData;
+        // TEMPORARILY DISABLED CACHE FOR TESTING - FORCING FRESH DATA
+        // var cachedData = await TryGetCacheAsync<ConditionsDictionary>(cacheKey);
+        // if (cachedData != null) return cachedData;
 
         var existingCondition = await _dbContext.ConditionsDictionary
             .FirstOrDefaultAsync(c =>
@@ -50,11 +51,14 @@ public class ConditionService : IConditionService
 
         if (isHealthyRequest)
         {
-            var care = "استمر في سقاية منتظمة، توفير شمس كافية، وتهوية جيدة. افحص النبات أسبوعياً للتأكد من عدم ظهور أي علامات مرضية.";
             if (existingCondition != null)
             {
                 existingCondition.Treatment = null;
-                existingCondition.CareInstructions = care;
+                existingCondition.WateringAdvice = "استمر في سقاية منتظمة حسب احتياج نوع النبتة.";
+                existingCondition.LightAdvice = "توفير شمس كافية أو إضاءة مناسبة لمكان النبتة.";
+                existingCondition.FertilizingAdvice = "التسميد المتوازن خلال فصول النمو فقط.";
+                existingCondition.SoilAdvice = "تهوية التربة والتأكد من جودة الصرف.";
+                existingCondition.HumidityAdvice = "افحص النبات أسبوعياً للتأكد من عدم ظهور أي علامات مرضية.";
                 existingCondition.LastUpdated = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync();
                 result = existingCondition;
@@ -66,7 +70,11 @@ public class ConditionService : IConditionService
                     PlantType = plantType,
                     ConditionName = conditionName,
                     Treatment = null,
-                    CareInstructions = care,
+                    WateringAdvice = "استمر في سقاية منتظمة حسب احتياج نوع النبتة.",
+                    LightAdvice = "توفير شمس كافية أو إضاءة مناسبة لمكان النبتة.",
+                    FertilizingAdvice = "التسميد المتوازن خلال فصول النمو فقط.",
+                    SoilAdvice = "تهوية التربة والتأكد من جودة الصرف.",
+                    HumidityAdvice = "افحص النبات أسبوعياً للتأكد من عدم ظهور أي علامات مرضية.",
                     LastUpdated = DateTime.UtcNow
                 };
                 _dbContext.ConditionsDictionary.Add(result);
@@ -82,7 +90,8 @@ public class ConditionService : IConditionService
             result = await ForceRefreshConditionAsync(plantType, conditionName, detectedCategory);
         }
 
-        await TrySetCacheAsync(cacheKey, result);
+        // TEMPORARILY DISABLED CACHE FOR TESTING
+        // await TrySetCacheAsync(cacheKey, result);
         return result;
     }
 
@@ -92,54 +101,84 @@ public class ConditionService : IConditionService
         {
             var jsonResponse = await _geminiService.GenerateArabicTreatmentTextAsync(plantType, conditionName, detectedCategory);
             
-            string treatment = "غير متوفر";
-            string careInstructions = "غير متوفر";
-
-            if (!string.IsNullOrEmpty(jsonResponse))
+            if (string.IsNullOrEmpty(jsonResponse))
             {
-                try
+                _logger.LogWarning("Gemini returned null. Returning in-memory fallback for {Plant}/{Condition}", plantType, conditionName);
+                
+                // Return fallback immediately and EXIT the method
+                return new ConditionsDictionary
                 {
-                    // Clean up any markdown fencing or whitespace
-                    var cleanJson = jsonResponse.Trim();
-                    if (cleanJson.StartsWith("```"))
-                    {
-                        cleanJson = cleanJson.Replace("```json", "").Replace("```", "").Trim();
-                    }
-
-                    using var doc = JsonDocument.Parse(cleanJson);
-                    var root = doc.RootElement;
-                    
-                    // Extract Treatment (العلاج) → treatment field
-                    if (root.TryGetProperty("Treatment", out var treatProp))
-                        treatment = treatProp.GetString() ?? treatment;
-                    else if (root.TryGetProperty("SpecificIssue", out var issueProp))
-                        treatment = issueProp.GetString() ?? treatment;
-
-                    // Extract CareAdvice (الرعاية) → careInstructions field
-                    if (root.TryGetProperty("CareAdvice", out var careProp))
-                        careInstructions = careProp.GetString() ?? careInstructions;
-                    else if (root.TryGetProperty("Care", out var careProp2))
-                        careInstructions = careProp2.GetString() ?? careInstructions;
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse Gemini JSON response. Raw: {Response}", jsonResponse);
-                    treatment = jsonResponse;
-                }
+                    Id = 0,
+                    PlantType = plantType,
+                    ConditionName = conditionName,
+                    Treatment = "لا يوجد",
+                    WateringAdvice = "عذراً يا صديقي، لم أتمكن من التعرف على النبتة حالياً.",
+                    LightAdvice = "تأكد من التقاط صورة واضحة للأوراق.",
+                    FertilizingAdvice = "رحلة العلاج تبدأ بصورة واضحة!",
+                    SoilAdvice = "من فضلك حاول مجدداً.",
+                    HumidityAdvice = "أنا بانتظارك!",
+                    LastUpdated = DateTime.UtcNow
+                };
             }
 
-            // Clean up any newlines to keep single flowing paragraphs
-            treatment = treatment.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
-            careInstructions = careInstructions.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            string treatment = "غير متوفر";
+            string wateringAdvice = "غير متوفر";
+            string lightAdvice = "غير متوفر";
+            string fertilizingAdvice = "غير متوفر";
+            string soilAdvice = "غير متوفر";
+            string humidityAdvice = "غير متوفر";
 
+            try
+            {
+                var cleanJson = jsonResponse.Trim();
+                if (cleanJson.StartsWith("```"))
+                {
+                    cleanJson = cleanJson.Replace("```json", "").Replace("```", "").Trim();
+                }
+
+                using var doc = JsonDocument.Parse(cleanJson);
+                var root = doc.RootElement;
+                
+                if (root.TryGetProperty("Treatment", out var treatProp))
+                    treatment = treatProp.GetString() ?? treatment;
+
+                if (root.TryGetProperty("CareAdvice", out var careObj) && careObj.ValueKind == JsonValueKind.Object)
+                {
+                    if (careObj.TryGetProperty("Watering", out var w)) wateringAdvice = w.GetString() ?? wateringAdvice;
+                    if (careObj.TryGetProperty("Light", out var l)) lightAdvice = l.GetString() ?? lightAdvice;
+                    if (careObj.TryGetProperty("Fertilizing", out var f)) fertilizingAdvice = f.GetString() ?? fertilizingAdvice;
+                    if (careObj.TryGetProperty("Soil", out var s)) soilAdvice = s.GetString() ?? soilAdvice;
+                    if (careObj.TryGetProperty("Humidity", out var h)) humidityAdvice = h.GetString() ?? humidityAdvice;
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse Gemini JSON response. Raw: {Response}", jsonResponse);
+                treatment = jsonResponse;
+            }
+
+            treatment = treatment.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            wateringAdvice = wateringAdvice.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            lightAdvice = lightAdvice.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            fertilizingAdvice = fertilizingAdvice.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            soilAdvice = soilAdvice.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+            humidityAdvice = humidityAdvice.Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Trim();
+
+            // Find existing to update, or create new
             var existing = await _dbContext.ConditionsDictionary
                 .FirstOrDefaultAsync(c => c.PlantType.ToLower() == plantType.ToLower() && c.ConditionName.ToLower() == conditionName.ToLower());
 
             if (existing != null)
             {
                 existing.Treatment = treatment;
-                existing.CareInstructions = careInstructions;
+                existing.WateringAdvice = wateringAdvice;
+                existing.LightAdvice = lightAdvice;
+                existing.FertilizingAdvice = fertilizingAdvice;
+                existing.SoilAdvice = soilAdvice;
+                existing.HumidityAdvice = humidityAdvice;
                 existing.LastUpdated = DateTime.UtcNow;
+                
+                // EF will track changes automatically
             }
             else
             {
@@ -148,7 +187,11 @@ public class ConditionService : IConditionService
                     PlantType = plantType,
                     ConditionName = conditionName,
                     Treatment = treatment,
-                    CareInstructions = careInstructions,
+                    WateringAdvice = wateringAdvice,
+                    LightAdvice = lightAdvice,
+                    FertilizingAdvice = fertilizingAdvice,
+                    SoilAdvice = soilAdvice,
+                    HumidityAdvice = humidityAdvice,
                     LastUpdated = DateTime.UtcNow
                 };
                 _dbContext.ConditionsDictionary.Add(existing);
@@ -158,7 +201,25 @@ public class ConditionService : IConditionService
             await TrySetCacheAsync($"condition_{plantType.ToLower().Replace(" ", "_")}_{conditionName.ToLower().Replace(" ", "_")}", existing);
             return existing;
         }
-        catch { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in ForceRefreshConditionAsync for {Plant}/{Condition}", plantType, conditionName);
+            
+            // Debugging Fallback: Returns the actual error message to the client
+            return new ConditionsDictionary
+            {
+                Id = 0,
+                PlantType = plantType,
+                ConditionName = conditionName,
+                Treatment = $"Error: {ex.Message} || Inner: {ex.InnerException?.Message} || Trace: {ex.StackTrace?.Substring(0, Math.Min(ex.StackTrace.Length, 150))}",
+                WateringAdvice = "تتبع الخطأ أعلاه لمعرفة سبب فشل السيرفر في جلب بيانات Gemini أو الاتصال بالداتابيز.",
+                LightAdvice = "تأكد من إعدادات الـ API Key والـ Connection String.",
+                FertilizingAdvice = "فشل النظام في معالجة الطلب.",
+                SoilAdvice = "تحقق من سجلات الخادم (Logs).",
+                HumidityAdvice = "محاولة استعادة النظام...",
+                LastUpdated = DateTime.UtcNow
+            };
+        }
     }
 
     public async Task<PagedResponse<PlantLookupDto>> GetAllPlantsAsync(int pageNumber = 1, int pageSize = 10)

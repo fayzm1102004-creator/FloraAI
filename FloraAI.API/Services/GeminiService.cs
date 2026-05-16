@@ -27,7 +27,7 @@ public class GeminiService : IGeminiService
         var sanitizedCategory = detectedCategory != null ? SanitizeInput(detectedCategory) : null;
 
         var result = await CallGeminiAsync(BuildTreatmentPrompt(sanitizedPlant, sanitizedDisease, sanitizedCategory), jsonMode: true);
-        return result ?? BuildFallbackText(sanitizedPlant, sanitizedDisease);
+        return result; // Return null if it fails, don't return fallback here
     }
 
     public async Task<GeminiNewPlantResponse?> GenerateNewPlantDataAsync(string plantName)
@@ -49,7 +49,7 @@ public class GeminiService : IGeminiService
     private async Task<string?> CallGeminiAsync(string prompt, bool jsonMode)
     {
         var apiKey = _config["Gemini:ApiKey"];
-        var model = _config["Gemini:Model"] ?? "gemini-2.5-flash";
+        var model = _config["Gemini:Model"] ?? "gemini-1.5-flash";
         if (string.IsNullOrEmpty(apiKey)) { _logger.LogError("Gemini:ApiKey غير مضبوط."); return null; }
 
         var baseUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
@@ -62,25 +62,24 @@ public class GeminiService : IGeminiService
                 : new { temperature = 0.3, maxOutputTokens = 4096, responseMimeType = "text/plain" }
         };
 
-        try
+        var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        var response = await _http.PostAsync($"{baseUrl}?key={apiKey}", content);
+        response.EnsureSuccessStatusCode();
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var text = doc.RootElement
+            .GetProperty("candidates")[0]
+            .GetProperty("content")
+            .GetProperty("parts")[0]
+            .GetProperty("text")
+            .GetString();
+
+        if (jsonMode && text is not null)
         {
-            var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-            var response = await _http.PostAsync($"{baseUrl}?key={apiKey}", content);
-            response.EnsureSuccessStatusCode();
-
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            var text = doc.RootElement
-                .GetProperty("candidates")[0].GetProperty("content")
-                .GetProperty("parts")[0].GetProperty("text").GetString();
-
-            if (jsonMode && text is not null)
-            {
-                text = text.Trim().TrimStart('`').TrimEnd('`');
-                if (text.StartsWith("json", StringComparison.OrdinalIgnoreCase)) text = text[4..].Trim();
-            }
-            return text;
+            text = text.Trim().TrimStart('`').TrimEnd('`');
+            if (text.StartsWith("json", StringComparison.OrdinalIgnoreCase)) text = text[4..].Trim();
         }
-        catch (Exception ex) { _logger.LogError(ex, "فشل استدعاء Gemini API."); return null; }
+        return text;
     }
 
     private static string BuildTreatmentPrompt(string plantName, string diseaseLabel, string? detectedCategory)
@@ -111,7 +110,7 @@ public class GeminiService : IGeminiService
             : $"Issue/Description: [{diseaseLabel}]";
 
         return $$"""
-        Role: You are a warm, friendly plant doctor named "دكتور فلورا". You speak to users like a best friend who happens to be a plant expert. Your tone is casual, warm, and reassuring — never robotic or formal.
+        Role: You are a warm, friendly plant doctor named "دكتور فلورا". You speak to users like a best friend who happens to be a plant expert. Your tone is casual, reassuring, and helpful.
 
         CRITICAL GUARDRAIL (INPUT VALIDATION):
         Before analyzing, verify that the text is a plausible plant name. If it's a human, animal, random object, or gibberish, return ONLY this JSON:
@@ -119,41 +118,53 @@ public class GeminiService : IGeminiService
           "MainCategory": "Invalid",
           "SpecificIssue": "ليس نباتاً",
           "Treatment": "لا يوجد",
-          "CareAdvice": "عذراً يا صديقي، لم أتمكن من التعرف على أي نبتة في هذه الصورة. قد تكون الصورة غير واضحة أو تحتوي على شيء آخر. من فضلك، التقط صورة مقربة وواضحة لأوراق أو ساق النبتة لنبدأ رحلة العلاج معاً!"
+          "CareAdvice": {
+            "Watering": "عذراً يا صديقي، لم أتمكن من التعرف على النبتة.",
+            "Light": "تأكد من التقاط صورة واضحة للأوراق.",
+            "Fertilizing": "رحلة العلاج تبدأ بصورة واضحة!",
+            "Soil": "من فضلك حاول مجدداً.",
+            "Humidity": "أنا بانتظارك!"
+          }
         }
 
         Task (ONLY IF INPUT IS A VALID PLANT):
-        Categorize the MainCategory into exactly ONE of these 5 Arabic terms:
-        ["فطريات", "بكتيريا", "فيروسات", "حشرات", "سليم"]
+        Provide a medical diagnosis report based on the plant name and disease identified by our local model.
         
-        Plant Name: [{{plantName}}]
+        Input Data:
+        - Plant Name: [{{plantName}}]
         {{contextLine}}
 
-        YOU MUST RETURN 4 SEPARATE FIELDS:
-        - Treatment (العلاج): خطوات العلاج الفعلية لإنقاذ النبتة من هذا المرض تحديداً. اذكر أسماء منتجات محددة وجدول زمني واضح.
-        - CareAdvice (الرعاية): نصائح الرعاية والوقاية المرتبطة بنفس المرض تحديداً. اشرح كيف يمنع المستخدم هذا المرض بالذات من الرجوع مرة أخرى.
+        STRICT RULES FOR CONTENT:
+        1. MainCategory must be exactly one of: ["فطريات", "بكتيريا", "فيروسات", "حشرات", "سليم"].
+        2. Treatment (العلاج): 
+           - **STRICTLY PROHIBIT** the use of commercial brand names for pesticides/treatments.
+           - You MUST suggest only the **Active Ingredient (المادة الفعالة)** (e.g., mention "Copper Oxychloride" or "Abamectin" instead of brands).
+           - You MUST include a sentence in the Arabic response telling the user to look for this active ingredient at their local supplier.
+           - NEVER return 'لا يوجد', 'None', or 'غير متوفر'. Even if there is no chemical cure, provide actionable mechanical steps (e.g., pruning, isolation).
+           - Format: Single flowing paragraph (2-3 sentences).
+        3. CareAdvice (الرعاية): Provide specific prevention steps to stop THIS EXACT disease from returning.
+           - This MUST be a JSON object with exactly 5 keys: "Watering", "Light", "Fertilizing", "Soil", "Humidity".
+           - Each value must be a short, actionable Arabic sentence specific to the identified plant and disease.
 
-        CRITICAL: CareAdvice MUST be disease-specific, NOT generic plant care. If the disease is فطريات, the care must be about preventing fungi. If it's حشرات, the care must be about preventing pests. NEVER give generic watering/sunlight advice.
+        Writing Style:
+        - Use "يا صديقي", "لا تقلق", "خليني أقولك". 
+        - Mention the plant name [{{plantName}}] naturally in the text.
+        - Language: Arabic only.
+        - NO line breaks, NO bullet points, NO backticks.
 
-        STRICT WRITING RULES:
-        1. Both Treatment and CareAdvice must be ONE single flowing paragraph each. NEVER use line breaks, bullet points, or numbered lists.
-        2. Talk like you're chatting with a friend. Use words like "يا صديقي", "لا تقلق", "خليني أقولك".
-        3. You MUST mention the plant name [{{plantName}}] naturally.
-        4. Treatment: 2-3 sentences about the exact cure (مبيدات، عزل، تقليم، إلخ).
-        5. CareAdvice: 2-3 sentences about how to prevent THIS SPECIFIC disease from returning.
-        6. NO newline characters inside any field.
-
-        Language: Arabic only.
-
-        Output (Strict JSON, no markdown, no backticks):
+        Output (Strict JSON only):
         {
-          "MainCategory": "[ONE of the 5 terms]",
-          "SpecificIssue": "[اسم المرض بدقة]",
-          "Treatment": "[فقرة واحدة عن خطوات العلاج المحددة]",
-          "CareAdvice": "[فقرة واحدة عن نصائح الرعاية والوقاية]"
+          "MainCategory": "[Term]",
+          "SpecificIssue": "[Arabic Condition Name]",
+          "Treatment": "[One paragraph of actionable cure steps using Active Ingredients]",
+          "CareAdvice": {
+            "Watering": "[Sentence]",
+            "Light": "[Sentence]",
+            "Fertilizing": "[Sentence]",
+            "Soil": "[Sentence]",
+            "Humidity": "[Sentence]"
+          }
         }
-
-        OUTPUT REQUIREMENT: Return ONLY the JSON object, nothing else.
         """;
     }
 
@@ -196,7 +207,13 @@ public class GeminiService : IGeminiService
               "MainCategory": "سليم",
               "SpecificIssue": "النبات بصحة جيدة",
               "Treatment": "لا يحتاج علاج",
-              "CareAdvice": "تبدو نبتتك في أفضل حالاتها يا صديقي! استمر في نفس جدول الرعاية الرائع من سقاية وإضاءة، وتأكد فقط من فحص الأوراق أسبوعياً للاطمئنان عليها."
+              "CareAdvice": {
+                "Watering": "تبدو نبتتك في أفضل حالاتها يا صديقي! استمر في نفس جدول الرعاية الرائع من سقاية وإضاءة.",
+                "Light": "تأكد من توفير الإضاءة المناسبة حسب نوع النبتة.",
+                "Fertilizing": "لا تنسى التسميد الدوري في فصول النمو.",
+                "Soil": "حافظ على تهوية التربة وتغييرها عند الحاجة.",
+                "Humidity": "تأكد فقط من فحص الأوراق أسبوعياً للاطمئنان عليها."
+              }
             }
             """;
         }
@@ -208,7 +225,13 @@ public class GeminiService : IGeminiService
               "MainCategory": "Invalid",
               "SpecificIssue": "غير معروف",
               "Treatment": "لا يوجد",
-              "CareAdvice": "عذراً يا صديقي، لم أتمكن من التعرف على أي نبتة في هذه الصورة. قد تكون الصورة غير واضحة أو تحتوي على شيء آخر. من فضلك، التقط صورة مقربة وواضحة لأوراق أو ساق النبتة لنبدأ رحلة العلاج معاً!"
+              "CareAdvice": {
+                "Watering": "عذراً يا صديقي، لم أتمكن من التعرف على النبتة.",
+                "Light": "تأكد من التقاط صورة واضحة للأوراق.",
+                "Fertilizing": "رحلة العلاج تبدأ بصورة واضحة!",
+                "Soil": "من فضلك حاول مجدداً.",
+                "Humidity": "أنا بانتظارك!"
+              }
             }
             """;
         }
@@ -217,8 +240,14 @@ public class GeminiService : IGeminiService
         {
           "MainCategory": "{{arabicDisease}}",
           "SpecificIssue": "{{diseaseLabel}}",
-          "Treatment": "يرجى استشارة متخصص لعلاج {{arabicDisease}} في نبتتك.",
-          "CareAdvice": "حافظ على تهوية جيدة وتقليل الري مؤقتاً حتى تتعافى نبتتك."
+          "Treatment": "يرجى استخدام مبيد يحتوي على المادة الفعالة المناسبة لعلاج {{arabicDisease}} في نبتتك واستشر المورد المحلي.",
+          "CareAdvice": {
+            "Watering": "حافظ على تهوية جيدة وتقليل الري مؤقتاً.",
+            "Light": "تجنب أشعة الشمس المباشرة الحارقة حالياً.",
+            "Fertilizing": "توقف عن التسميد حتى تتعافى نبتتك.",
+            "Soil": "تأكد من جودة صرف التربة.",
+            "Humidity": "قلل الرطوبة حول الأوراق المصابة."
+          }
         }
         """;
     }
