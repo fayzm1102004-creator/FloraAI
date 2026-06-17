@@ -2,7 +2,12 @@ using FloraAI.API.DTOs.UserPlant;
 using FloraAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace FloraAI.API.Controllers;
+
+[Authorize]
+
 
 [ApiController]
 [Route("api/[controller]")]

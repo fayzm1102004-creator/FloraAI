@@ -259,4 +259,113 @@ public class UserPlantService : IUserPlantService
             throw;
         }
     }
+
+    /// <summary>
+    /// Deletes a scan record only if it belongs to the specified user.
+    /// كل يوزر بيتحكم في ملفه بس - مستحيل يمسح فحص حد تاني
+    /// </summary>
+    public async Task<bool> DeleteScanAsync(int scanId, int userId)
+    {
+        try
+        {
+            var scan = await _dbContext.ScanHistories
+                .Include(sh => sh.UserPlant)
+                .FirstOrDefaultAsync(sh => sh.Id == scanId);
+
+            if (scan == null)
+            {
+                _logger.LogWarning($"Scan {scanId} not found");
+                return false;
+            }
+
+            // Security: Verify the scan belongs to this user
+            if (scan.UserPlant == null || scan.UserPlant.UserId != userId)
+            {
+                _logger.LogWarning($"User {userId} attempted to delete scan {scanId} that doesn't belong to them");
+                return false;
+            }
+
+            _dbContext.ScanHistories.Remove(scan);
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation($"Scan {scanId} deleted successfully by user {userId}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error deleting scan {scanId}: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Converts a general scan result into a permanent plant profile.
+    /// One-Click Conversion: Recycles the existing payload without re-fetching from Gemini.
+    /// تحويل فحص عابر لبروفايل نبتة دائم في حديقة اليوزر بضغطة واحدة
+    /// </summary>
+    public async Task<UserPlantResponseDto?> AddScanToGardenAsync(int scanId, int userId, string nickname)
+    {
+        try
+        {
+            // 1. Find the scan record with its linked condition data
+            var scan = await _dbContext.ScanHistories
+                .Include(sh => sh.ConditionsDictionary)
+                .Include(sh => sh.UserPlant)
+                .FirstOrDefaultAsync(sh => sh.Id == scanId);
+
+            if (scan == null)
+            {
+                _logger.LogWarning($"Scan {scanId} not found for garden conversion");
+                return null;
+            }
+
+            // Security: Verify the scan belongs to this user
+            if (scan.UserPlant == null || scan.UserPlant.UserId != userId)
+            {
+                _logger.LogWarning($"User {userId} attempted to convert scan {scanId} that doesn't belong to them");
+                return null;
+            }
+
+            // 2. Recycle the existing payload from ConditionsDictionary (no re-fetch needed!)
+            var condition = scan.ConditionsDictionary;
+            if (condition == null)
+            {
+                _logger.LogWarning($"Scan {scanId} has no linked condition data");
+                return null;
+            }
+
+            // 3. Create a new permanent plant profile with all the recycled data
+            var newPlant = new UserPlant
+            {
+                UserId = userId,
+                Nickname = nickname,
+                PlantType = condition.PlantType,
+                CurrentStatus = condition.ConditionName,
+                SavedTreatment = condition.Treatment,
+                SavedWateringAdvice = condition.WateringAdvice,
+                SavedLightAdvice = condition.LightAdvice,
+                SavedFertilizingAdvice = condition.FertilizingAdvice,
+                SavedSoilAdvice = condition.SoilAdvice,
+                SavedHumidityAdvice = condition.HumidityAdvice,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.UserPlants.Add(newPlant);
+            await _dbContext.SaveChangesAsync();
+
+            // 4. Link the original scan to the new plant profile
+            scan.UserPlantId = newPlant.Id;
+            _dbContext.ScanHistories.Update(scan);
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation($"Scan {scanId} converted to garden plant '{nickname}' (PlantId: {newPlant.Id}) for user {userId}");
+
+            return _mapper.Map<UserPlantResponseDto>(newPlant);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error converting scan {scanId} to garden plant: {ex.Message}");
+            throw;
+        }
+    }
 }

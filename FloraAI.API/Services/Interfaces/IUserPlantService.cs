@@ -54,4 +54,16 @@ public interface IUserPlantService
     /// Get latest scan for each user plant
     /// </summary>
     Task<List<ScanHistoryDto>> GetLatestScansAsync(int userId);
+
+    /// <summary>
+    /// Deletes a scan record if it belongs to the specified user.
+    /// Ensures users can only delete their own scans.
+    /// </summary>
+    Task<bool> DeleteScanAsync(int scanId, int userId);
+
+    /// <summary>
+    /// Converts a general scan result into a permanent plant profile in user's garden.
+    /// Recycles the existing scan payload (disease, treatment, care) without re-fetching.
+    /// </summary>
+    Task<UserPlantResponseDto?> AddScanToGardenAsync(int scanId, int userId, string nickname);
 }
