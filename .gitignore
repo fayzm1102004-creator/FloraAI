@@ -1,0 +1,14 @@
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# OS-specific files
+.directory
+
+# Build and temp files
+[Bb]in/
+[Oo]bj/

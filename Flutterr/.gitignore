@@ -1,0 +1,65 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by https://www.toptal.com/developers/gitignore/api/flutter
+
+# Empty lines and comments
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.project
+.directory
+
+# IntelliJ related
+.idea/
+*.iml
+*.iws
+*.ipr
+/out/
+
+# Visual Studio Code related
+.vscode/
+
+# Flutter/Dart related
+/doc/api/
+/ios/Flutter/.flutter-plugins
+/ios/Flutter/.flutter-plugins-dependencies
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/Flutter.sandbox.xcconfig
+/ios/Flutter/ephemeral/
+/android/local.properties
+/android/key.properties
+/android/app/src/main/res/raw/keep.xml
+/build/
+/.dart_tool/
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/.packages
+/.pub-cache/
+/.pub/
+# /pubspec.lock
+
+# Web related
+/web/index.html.json
+/web/index.html_bootstrap.js
+
+# Windows related
+/windows/flutter/ephemeral/
+
+# macOS related
+/macos/Flutter/ephemeral/
+
+# Crashlytics related
+ios/Crashlytics.framework
+
+# Android Studio
+*.ipr
+*.iml
+*.iws
+.idea/
+
