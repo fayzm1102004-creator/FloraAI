@@ -1,0 +1,15 @@
+=========================================
+FloraAI Backend Requirements (C# / .NET 10)
+=========================================
+
+1. AutoMapper (Version: 16.1.1)
+2. BCrypt.Net-Next (Version: 4.1.0)
+3. Microsoft.AspNetCore.Authentication.JwtBearer (Version: 10.0.6)
+4. Microsoft.EntityFrameworkCore (Version: 10.0.5)
+5. Microsoft.Data.SqlClient (Version: 6.1.1)
+6. Microsoft.EntityFrameworkCore.Tools (Version: 10.0.5)
+7. Microsoft.Extensions.Caching.StackExchangeRedis (Version: 10.0.6)
+8. Microsoft.Extensions.Http.Polly (Version: 10.0.7)
+9. Microsoft.OpenApi (Version: 1.6.14)
+10. Npgsql.EntityFrameworkCore.PostgreSQL (Version: 10.0.1)
+11. Swashbuckle.AspNetCore (Version: 6.6.2)

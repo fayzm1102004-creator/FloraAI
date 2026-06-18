@@ -1,0 +1,23 @@
+Instructions for Installation - FloraAI Backend
+
+Project: Backend (.NET 10 Web API)
+
+--------------------------------------------------
+Backend Installation (.NET)
+--------------------------------------------------
+Prerequisites: 
+- .NET 10 SDK
+- PostgreSQL Server
+
+Steps:
+1. Open your terminal or command prompt.
+2. Navigate to the backend directory:
+   cd back
+3. Restore the required packages:
+   dotnet restore
+4. Run the API:
+   cd FloraAI.API
+   dotnet run
+   (Alternatively, open back/FloraAi.sln in Visual Studio 2022 and click Run).
+
+Note: Ensure your PostgreSQL database is running and the connection string in the configuration file is correct.
