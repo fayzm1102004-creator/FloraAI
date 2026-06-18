@@ -1,6 +1,5 @@
-==================================================
 FloraAI - Complete Installation Instructions
-==================================================
+
 
 This guide provides step-by-step instructions to run the FloraAI project. 
 The project consists of a .NET 10 Backend API and a Flutter Mobile App.
