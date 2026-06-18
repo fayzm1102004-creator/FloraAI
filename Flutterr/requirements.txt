@@ -1,0 +1,29 @@
+=========================================
+Flora AI - Flutter Requirements
+=========================================
+
+Flutter Version: 3.29.2
+Dart Version: 3.7.2
+
+أولاً: المكتبات الأساسية (Dependencies)
+--------------------------------------------------
+1. easy_localization (Version: 3.0.8) - دعم تعدد اللغات
+2. dotted_border (Version: 2.1.0) - إطار منقط للصور
+3. provider (Version: 6.1.5+1) - إدارة الحالة
+4. image_picker (Version: 1.2.1) - اختيار الصور من الكاميرا والمعرض
+5. cupertino_icons (Version: 1.0.8) - أيقونات iOS
+6. dio (Version: 5.9.2) - طلبات الشبكة HTTP
+7. shared_preferences (Version: 2.5.3) - تخزين البيانات محلياً
+8. tflite_flutter (Version: 0.12.1) - تشغيل موديلات الذكاء الاصطناعي
+9. image (Version: 4.3.0) - معالجة الصور
+10. sqflite (Version: 2.4.2) - قاعدة بيانات محلية
+11. path_provider (Version: 2.1.5) - الوصول لمسارات الملفات
+12. uuid (Version: 4.5.3) - توليد معرفات فريدة
+13. connectivity_plus (Version: 7.1.1) - فحص حالة الإنترنت
+14. path (Version: 1.9.1) - التعامل مع مسارات الملفات
+
+ثانياً: مكتبات التطوير (Dev Dependencies)
+--------------------------------------------------
+1. flutter_lints (Version: 5.0.0) - تحسين جودة الكود أثناء التطوير
+
+تم إعداد هذا المستند لتوثيق المكتبات المستخدمة في مشروع Flora AI.
