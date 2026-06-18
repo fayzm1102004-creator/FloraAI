@@ -1,0 +1,42 @@
+Instructions for Installation - FloraAI
+
+Project Components:
+1. Backend (.NET 10 Web API)
+2. Frontend (Flutter Mobile App)
+
+==================================================
+Part 1: Backend Installation (.NET)
+==================================================
+Prerequisites: 
+- .NET 10 SDK
+- PostgreSQL Server
+
+Steps:
+1. Open your terminal or command prompt.
+2. Navigate to the backend directory:
+   cd back
+3. Restore the required packages:
+   dotnet restore
+4. Run the API:
+   cd FloraAI.API
+   dotnet run
+
+Note: Ensure your PostgreSQL database is running and the connection string is correctly set.
+
+==================================================
+Part 2: Frontend Installation (Flutter)
+==================================================
+Prerequisites: 
+- Flutter SDK
+- Android Studio or VS Code
+
+Steps:
+1. Open a new terminal window.
+2. Navigate to the Flutter directory:
+   cd Flutterr
+3. Download the required packages:
+   flutter pub get
+4. Run the application on an emulator or connected device:
+   flutter run
+
+Note: Ensure the backend is running first so the mobile app can connect successfully.
