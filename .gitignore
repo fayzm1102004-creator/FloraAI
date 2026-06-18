@@ -12,3 +12,9 @@ Thumbs.db
 # Build and temp files
 [Bb]in/
 [Oo]bj/
+[Pp]ublish*/
+publish_output/
+publish_ready/
+*.zip
+[Tt]est[Rr]esults/
+
