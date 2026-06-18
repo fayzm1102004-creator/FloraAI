@@ -18,3 +18,9 @@ publish_ready/
 *.zip
 [Tt]est[Rr]esults/
 
+# Secrets and Environment Variables
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+!appsettings.example.json
+.env
