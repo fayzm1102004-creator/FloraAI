@@ -15,15 +15,10 @@ This is the backend API for the FloraAI application, built using **.NET 10 (C#)*
 ## 🛠️ Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - PostgreSQL Server
-- Redis Server (if you are running caching locally)
+- Redis Server (optional, for caching)
 
 ## ⚙️ Environment Variables & Configuration
 To run this project, you need to configure the database connection. If you are running locally, update `appsettings.Development.json`. For deployment (e.g., Railway), set these as Environment Variables.
-
-Important Keys:
-* `ConnectionStrings:DefaultConnection` - The PostgreSQL connection URL.
-* `JWT` settings (Secret Key, Issuer, Audience).
-* `Redis` connection string.
 
 Example `appsettings.Development.json`:
 ```json
@@ -34,29 +29,38 @@ Example `appsettings.Development.json`:
 }
 ```
 
-## 🏗️ Installation & Running Locally
+## 🏗️ Installation & Running Locally (Step-by-Step)
 
-1. **Restore dependencies:**
-   Open your terminal in the `back` directory and run:
-   ```bash
-   dotnet restore
-   ```
+To run the backend on your local machine, open your terminal and follow these exact steps:
 
-2. **Apply Database Migrations:**
-   Ensure your PostgreSQL server is running and the connection string is correct, then run:
-   ```bash
-   cd FloraAI.API
-   dotnet ef database update
-   ```
+**1. Navigate to the backend directory:**
+```bash
+cd back
+```
 
-3. **Run the API:**
-   ```bash
-   dotnet run
-   ```
+**2. Restore the required .NET packages:**
+```bash
+dotnet restore
+```
 
-4. **Swagger Documentation:**
-   Once the API is running, you can test all endpoints by accessing the Swagger UI at:
-   `https://localhost:<port>/swagger`
+**3. Navigate into the API project folder:**
+```bash
+cd FloraAI.API
+```
+
+**4. Apply the database migrations:**
+Ensure your PostgreSQL server is running, then run:
+```bash
+dotnet ef database update
+```
+
+**5. Run the API:**
+```bash
+dotnet run
+```
+
+Once the server is running, you can test all endpoints by accessing the Swagger UI at:
+`https://localhost:<port>/swagger`
 
 ## ☁️ Deployment (Railway)
 This project is structured for easy deployment on **Railway**.
